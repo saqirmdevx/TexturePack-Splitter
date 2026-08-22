@@ -2,6 +2,10 @@
 # Builds the command-line tool (split_spritesheet.py) into a single console executable.
 # Run via build_windows.bat / build_mac.sh, or directly:
 #   pyinstaller --noconfirm TextureSplitterCLI.spec
+import sys
+
+from version import __version__
+
 datas = [("srgb.icc", ".")]
 
 a = Analysis(
@@ -18,6 +22,34 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
+# Windows EXE version resource (shows up in File Explorer -> Properties -> Details).
+# Ignored on other platforms.
+version_info = None
+if sys.platform == "win32":
+    from PyInstaller.utils.win32.versioninfo import (
+        FixedFileInfo, StringFileInfo, StringStruct, StringTable, VarFileInfo, VarStruct, VSVersionInfo,
+    )
+    version_tuple = tuple(int(p) for p in __version__.split(".")) + (0,)
+    version_info = VSVersionInfo(
+        ffi=FixedFileInfo(filevers=version_tuple, prodvers=version_tuple),
+        kids=[
+            StringFileInfo([StringTable(
+                "040904B0",
+                [
+                    StringStruct("CompanyName", "saqirmdevx"),
+                    StringStruct("FileDescription", "TextureSplitter CLI"),
+                    StringStruct("FileVersion", __version__),
+                    StringStruct("InternalName", "TextureSplitterCLI"),
+                    StringStruct("LegalCopyright", "saqirmdevx"),
+                    StringStruct("OriginalFilename", "TextureSplitterCLI.exe"),
+                    StringStruct("ProductName", "TextureSplitter"),
+                    StringStruct("ProductVersion", __version__),
+                ],
+            )]),
+            VarFileInfo([VarStruct("Translation", [1033, 1200])]),
+        ],
+    )
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -32,4 +64,5 @@ exe = EXE(
     upx_exclude=[],
     runtime_tmpdir=None,
     console=True,
+    version=version_info,
 )

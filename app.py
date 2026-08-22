@@ -9,6 +9,8 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
 
+from version import __version__
+
 
 def natural_key(s):
     return [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", s)]
@@ -22,6 +24,11 @@ def session_path():
     else:
         base = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
     return base / "TextureSplitter" / "session.json"
+
+if getattr(sys, "frozen", False):
+    ICON_PATH = Path(sys._MEIPASS) / "favicon.png"
+else:
+    ICON_PATH = Path(__file__).parent / "assets" / "favicon.png"
 
 AUTHOR = "saqirmdevx"
 AUTHOR_URL = "https://github.com/saqirmdevx"
@@ -236,6 +243,9 @@ class App(tk.Tk):
         self.geometry("1180x800")
         self.minsize(980, 650)
         self.configure(bg=self.bg)
+        self.title("TextureSplitter")
+        self._icon_image = ImageTk.PhotoImage(Image.open(ICON_PATH))
+        self.iconphoto(True, self._icon_image)
         self.build()
         self.load_session()
         self.refresh()
@@ -450,6 +460,10 @@ class App(tk.Tk):
         )
         self.credit.pack(side="left")
         self.credit.bind("<Button-1>", lambda e: webbrowser.open(AUTHOR_URL))
+        self.version_lbl = tk.Label(
+            credit, bg=self.bg, fg="#566171", font=("Segoe UI", 7), text=f" · v{__version__}"
+        )
+        self.version_lbl.pack(side="left")
         tk.Frame(credit, bg=self.bg).pack(side="left", expand=True)
 
     def lab(self, p):

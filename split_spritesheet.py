@@ -21,6 +21,8 @@ from typing import Optional
 
 from PIL import Image
 
+from version import __version__
+
 INPUT_DIR = Path("input")
 OUTPUT_DIR = Path("output")
 
@@ -154,6 +156,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("-fs", "--frame-size", type=int, default=None,
                          help="pad each frame onto an NxN transparent canvas, centered, without resizing")
+    parser.add_argument("-v", "--version", action="version", version=f"TextureSplitter {__version__}")
     args = parser.parse_args()
 
     if not INPUT_DIR.is_dir():

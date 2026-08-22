@@ -4,7 +4,9 @@
 #   pyinstaller --noconfirm TextureSplitter.spec
 import sys
 
-datas = [("srgb.icc", ".")]
+from version import __version__
+
+datas = [("srgb.icc", "."), ("assets/favicon.png", ".")]
 
 a = Analysis(
     ["app.py"],
@@ -19,6 +21,34 @@ a = Analysis(
     noarchive=False,
 )
 pyz = PYZ(a.pure)
+
+# Windows EXE version resource (shows up in File Explorer -> Properties -> Details).
+# Ignored on other platforms.
+version_info = None
+if sys.platform == "win32":
+    from PyInstaller.utils.win32.versioninfo import (
+        FixedFileInfo, StringFileInfo, StringStruct, StringTable, VarFileInfo, VarStruct, VSVersionInfo,
+    )
+    version_tuple = tuple(int(p) for p in __version__.split(".")) + (0,)
+    version_info = VSVersionInfo(
+        ffi=FixedFileInfo(filevers=version_tuple, prodvers=version_tuple),
+        kids=[
+            StringFileInfo([StringTable(
+                "040904B0",
+                [
+                    StringStruct("CompanyName", "saqirmdevx"),
+                    StringStruct("FileDescription", "TextureSplitter"),
+                    StringStruct("FileVersion", __version__),
+                    StringStruct("InternalName", "TextureSplitter"),
+                    StringStruct("LegalCopyright", "saqirmdevx"),
+                    StringStruct("OriginalFilename", "TextureSplitter.exe"),
+                    StringStruct("ProductName", "TextureSplitter"),
+                    StringStruct("ProductVersion", __version__),
+                ],
+            )]),
+            VarFileInfo([VarStruct("Translation", [1033, 1200])]),
+        ],
+    )
 
 exe = EXE(
     pyz,
@@ -35,6 +65,7 @@ exe = EXE(
     runtime_tmpdir=None,
     console=False,
     icon="assets/favicon.png",
+    version=version_info,
 )
 
 if sys.platform == "darwin":
@@ -43,5 +74,9 @@ if sys.platform == "darwin":
         name="TextureSplitter.app",
         icon="assets/favicon.png",
         bundle_identifier="com.saqirmdevx.texturesplitter",
-        info_plist={"NSHighResolutionCapable": True},
+        info_plist={
+            "NSHighResolutionCapable": True,
+            "CFBundleShortVersionString": __version__,
+            "CFBundleVersion": __version__,
+        },
     )
