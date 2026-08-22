@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sys
 import subprocess
 import webbrowser
@@ -8,7 +9,21 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
 
-AUTHOR = "Naščák Martinsaqirmdevx"
+
+def natural_key(s):
+    return [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", s)]
+
+
+def session_path():
+    if os.name == "nt":
+        base = Path(os.environ.get("APPDATA", str(Path.home())))
+    elif sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    else:
+        base = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config")))
+    return base / "TextureSplitter" / "session.json"
+
+AUTHOR = "saqirmdevx"
 AUTHOR_URL = "https://github.com/saqirmdevx"
 LANGS = {
     "pt": "🇧🇷 Português",
@@ -30,6 +45,7 @@ T = {
         "json": "JSON",
         "choose_json": "Selecionar JSON...",
         "size": "Escolha o tamanho do Sprite:",
+        "original": "Original",
         "custom": "Personalizado...",
         "settings": "Configurações do JSON",
         "output": "Pasta de saída:",
@@ -45,20 +61,25 @@ T = {
         "sprite_source": "Tamanho no spritesheet",
         "rotated": "Rotacionado",
         "trimmed": "Recortado",
-        "open": "Abrir pasta",
-        "shortcut": "Criar atalho na área de trabalho",
         "done": "Concluído! {n} imagens salvas.",
         "errjson": "Escolha o arquivo JSON.",
         "errout": "Escolha a pasta de saída.",
         "custom_title": "Tamanho personalizado",
         "custom_prompt": "Digite o tamanho do sprite (ex.: 64):",
         "invalid": "Digite um número inteiro maior que zero.",
+        "play_anim": "▶ Reproduzir",
+        "play": "Reproduzir",
+        "pause": "Pausar",
+        "stop": "Parar",
+        "speed": "Velocidade:",
+        "no_frames": "Nenhum sprite nesta pasta.",
     },
     "en": {
         "title": "TextureSplitter",
         "json": "JSON",
         "choose_json": "Select JSON...",
         "size": "Choose Sprite Size:",
+        "original": "Original",
         "custom": "Custom...",
         "settings": "JSON Settings",
         "output": "Output folder:",
@@ -74,20 +95,25 @@ T = {
         "sprite_source": "Spritesheet size",
         "rotated": "Rotated",
         "trimmed": "Trimmed",
-        "open": "Open folder",
-        "shortcut": "Create desktop shortcut",
         "done": "Done! {n} images saved.",
         "errjson": "Choose the JSON file.",
         "errout": "Choose the output folder.",
         "custom_title": "Custom size",
         "custom_prompt": "Enter sprite size (e.g. 64):",
         "invalid": "Enter a positive integer.",
+        "play_anim": "▶ Play",
+        "play": "Play",
+        "pause": "Pause",
+        "stop": "Stop",
+        "speed": "Speed:",
+        "no_frames": "No sprites in this folder.",
     },
     "es": {
         "title": "TextureSplitter",
         "json": "JSON",
         "choose_json": "Seleccionar JSON...",
         "size": "Elige el tamaño del Sprite:",
+        "original": "Original",
         "custom": "Personalizado...",
         "settings": "Configuración del JSON",
         "output": "Carpeta de salida:",
@@ -103,20 +129,25 @@ T = {
         "sprite_source": "Tamaño en el spritesheet",
         "rotated": "Rotado",
         "trimmed": "Recortado",
-        "open": "Abrir carpeta",
-        "shortcut": "Crear acceso directo en el escritorio",
         "done": "¡Listo! {n} imágenes guardadas.",
         "errjson": "Elige el archivo JSON.",
         "errout": "Elige la carpeta de salida.",
         "custom_title": "Tamaño personalizado",
         "custom_prompt": "Escribe el tamaño del sprite (ej.: 64):",
         "invalid": "Escribe un número entero mayor que cero.",
+        "play_anim": "▶ Reproducir",
+        "play": "Reproducir",
+        "pause": "Pausar",
+        "stop": "Detener",
+        "speed": "Velocidad:",
+        "no_frames": "No hay sprites en esta carpeta.",
     },
     "zh": {
         "title": "TextureSplitter",
         "json": "JSON",
         "choose_json": "选择 JSON...",
         "size": "选择 Sprite 大小：",
+        "original": "原始大小",
         "custom": "自定义...",
         "settings": "JSON 设置",
         "output": "输出文件夹：",
@@ -132,20 +163,25 @@ T = {
         "sprite_source": "Spritesheet 大小",
         "rotated": "旋转",
         "trimmed": "裁剪",
-        "open": "打开文件夹",
-        "shortcut": "创建桌面快捷方式",
         "done": "完成！已保存 {n} 张图片。",
         "errjson": "请选择 JSON 文件。",
         "errout": "请选择输出文件夹。",
         "custom_title": "自定义大小",
         "custom_prompt": "输入 Sprite 大小（例如 64）：",
         "invalid": "请输入大于零的整数。",
+        "play_anim": "▶ 播放",
+        "play": "播放",
+        "pause": "暂停",
+        "stop": "停止",
+        "speed": "速度：",
+        "no_frames": "此文件夹中没有 Sprite。",
     },
     "sk": {
         "title": "TextureSplitter",
         "json": "JSON",
         "choose_json": "Vybrať JSON...",
         "size": "Vyberte veľkosť Sprite:",
+        "original": "Pôvodná veľkosť",
         "custom": "Vlastná...",
         "settings": "Nastavenia JSON",
         "output": "Výstupný priečinok:",
@@ -161,14 +197,18 @@ T = {
         "sprite_source": "Veľkosť v spritesheete",
         "rotated": "Otočené",
         "trimmed": "Orezané",
-        "open": "Otvoriť priečinok",
-        "shortcut": "Vytvoriť skratku na pracovnej ploche",
         "done": "Hotovo! Uložených obrázkov: {n}.",
         "errjson": "Vyberte JSON súbor.",
         "errout": "Vyberte výstupný priečinok.",
         "custom_title": "Vlastná veľkosť",
         "custom_prompt": "Zadajte veľkosť sprite (napr. 64):",
         "invalid": "Zadajte celé číslo väčšie ako nula.",
+        "play_anim": "▶ Prehrať",
+        "play": "Prehrať",
+        "pause": "Pauza",
+        "stop": "Zastaviť",
+        "speed": "Rýchlosť:",
+        "no_frames": "V tomto priečinku nie sú žiadne sprity.",
     },
 }
 
@@ -176,16 +216,16 @@ T = {
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.lang = "pt"
+        self.lang = "en"
         self.png = None
         self.json_path = None
         self.out = None
         self.data = None
         self.sheet = None
         self.selected = None
-        self.size = 64
+        self.size = None
+        self.original_mode = True
         self.thumbs = []
-        self.maximized = False
         self.bg = "#10151c"
         self.panel = "#191f28"
         self.panel2 = "#222a35"
@@ -197,6 +237,7 @@ class App(tk.Tk):
         self.minsize(980, 650)
         self.configure(bg=self.bg)
         self.build()
+        self.load_session()
         self.refresh()
         self.make_shortcut()
 
@@ -223,21 +264,6 @@ class App(tk.Tk):
             "Dark.TButton",
             background=[("active", self.border), ("pressed", self.border)],
             foreground=[("active", self.accent)],
-        )
-        style.configure(
-            "Win.TButton",
-            background=self.panel,
-            foreground=self.muted,
-            bordercolor=self.panel,
-            borderwidth=0,
-            focuscolor=self.panel,
-            padding=(10, 4),
-            font=("Segoe UI", 10),
-        )
-        style.map(
-            "Win.TButton",
-            background=[("active", self.panel2)],
-            foreground=[("active", self.text)],
         )
         style.configure(
             "Cut.TButton",
@@ -284,15 +310,6 @@ class App(tk.Tk):
         self.title_lbl.pack(side="left", padx=16)
         self.lang_btn = ttk.Button(top, style="Dark.TButton", cursor="hand2", command=self.lang_menu)
         self.lang_btn.pack(side="right", padx=5)
-        for txt, cmd in [("—", self.iconify), ("□", self.toggle_max), ("×", self.destroy)]:
-            ttk.Button(
-                top,
-                text=txt,
-                style="Win.TButton",
-                cursor="hand2",
-                width=4,
-                command=cmd,
-            ).pack(side="right")
         body = tk.Frame(self, bg=self.bg)
         body.pack(fill="both", expand=True, padx=16, pady=14)
         left = tk.Frame(body, bg=self.bg, width=380)
@@ -341,11 +358,12 @@ class App(tk.Tk):
         ).pack(fill="x", padx=14, pady=(0, 4))
         self.size_label = self.lab(files)
         self.size_label.pack(anchor="w", padx=14, pady=(5, 4))
-        self.size_var = tk.StringVar(value="64 x 64")
+        self.size_var = tk.StringVar(value=self.tr("original"))
         self.combo = ttk.Combobox(
             files,
             textvariable=self.size_var,
             values=(
+                self.tr("original"),
                 "16 x 16",
                 "32 x 32",
                 "48 x 48",
@@ -396,11 +414,7 @@ class App(tk.Tk):
             font=("Segoe UI", 8),
         ).pack(fill="x", padx=14, pady=4)
         self.cut_btn = ttk.Button(outp, style="Cut.TButton", cursor="hand2", command=self.cut)
-        self.cut_btn.pack(fill="x", padx=14, pady=8)
-        self.open_btn = self.btn(outp, self.open_output)
-        self.open_btn.pack(side="left", fill="x", expand=True, padx=(14, 4), pady=(0, 10))
-        self.short_btn = self.btn(outp, self.make_shortcut)
-        self.short_btn.pack(side="left", fill="x", expand=True, padx=(4, 14), pady=(0, 10))
+        self.cut_btn.pack(fill="x", padx=14, pady=(8, 14))
         self._bind_wheel(left_canvas, left_canvas)
         prev = tk.Frame(right, bg=self.panel, highlightbackground=self.border, highlightthickness=1)
         prev.pack(fill="both", expand=True)
@@ -468,14 +482,25 @@ class App(tk.Tk):
         self.json_label.config(text="JSON")
         self.json_btn.config(text=self.tr("choose_json"))
         self.size_label.config(text=self.tr("size"))
+        self.combo["values"] = (
+            self.tr("original"),
+            "16 x 16",
+            "32 x 32",
+            "48 x 48",
+            "64 x 64",
+            "96 x 96",
+            "128 x 128",
+            "256 x 256",
+            "512 x 512",
+        )
+        if self.original_mode:
+            self.size_var.set(self.tr("original"))
         self.custom_btn.config(text=self.tr("custom"))
         self.settings_title.config(text=self.tr("settings"))
         self.out_label.config(text=self.tr("output"))
         self.out_btn.config(text=self.tr("choose_folder"))
         self.cut_btn.config(text=self.tr("cut"))
         self.prev_title.config(text=self.tr("preview"))
-        self.open_btn.config(text=self.tr("open"))
-        self.short_btn.config(text=self.tr("shortcut"))
         self.credit_prefix.config(text=MADE[self.lang] + " ")
         self.credit.config(text=AUTHOR)
         self.status.config(text=self.tr("ready"))
@@ -497,15 +522,53 @@ class App(tk.Tk):
             self.json_path = Path(p)
             self.json_var.set(str(self.json_path))
             self.load()
+            self.save_session()
 
     def choose_output(self):
         p = filedialog.askdirectory()
         if p:
             self.out = Path(p)
             self.out_var.set(str(self.out))
+            self.save_session()
+
+    def load_session(self):
+        try:
+            state = json.loads(session_path().read_text(encoding="utf-8"))
+        except Exception:
+            return
+        json_path = state.get("json_path")
+        if json_path and Path(json_path).is_file():
+            self.json_path = Path(json_path)
+            self.json_var.set(str(self.json_path))
+            self.load()
+        out = state.get("out")
+        if out and Path(out).is_dir():
+            self.out = Path(out)
+            self.out_var.set(str(self.out))
+
+    def save_session(self):
+        try:
+            p = session_path()
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(
+                json.dumps(
+                    {
+                        "json_path": str(self.json_path) if self.json_path else None,
+                        "out": str(self.out) if self.out else None,
+                    }
+                ),
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
 
     def size_changed(self, e=None):
-        self.size = int(self.size_var.get().split("x")[0])
+        if self.size_var.get() == self.tr("original"):
+            self.original_mode = True
+            self.size = None
+        else:
+            self.original_mode = False
+            self.size = int(self.size_var.get().split("x")[0])
         self.update_settings()
 
     def custom_size(self):
@@ -517,7 +580,7 @@ class App(tk.Tk):
             padx=18, pady=12
         )
         e = tk.Entry(d, bg=self.panel2, fg=self.text, relief="flat")
-        e.insert(0, str(self.size))
+        e.insert(0, str(self.size) if self.size else "")
         e.pack(padx=18)
         e.focus_set()
 
@@ -529,6 +592,7 @@ class App(tk.Tk):
                 messagebox.showerror("Error", self.tr("invalid"), parent=d)
                 return
             self.size = n
+            self.original_mode = False
             self.size_var.set(f"{n} x {n}")
             d.destroy()
             self.update_settings()
@@ -566,16 +630,25 @@ class App(tk.Tk):
         row = 0
         for folder, items in groups.items():
             label = folder if folder != "." else self.tr("root_group")
+            head = tk.Frame(self.inner, bg="#0b1016")
+            head.grid(
+                row=row, column=0, columnspan=cols, sticky="w", padx=4, pady=(14 if row else 0, 6)
+            )
             tk.Label(
-                self.inner,
+                head,
                 text=f"{label}  ({len(items)})",
                 bg="#0b1016",
                 fg=self.text,
                 font=("Segoe UI", 10, "bold"),
                 anchor="w",
-            ).grid(
-                row=row, column=0, columnspan=cols, sticky="w", padx=4, pady=(14 if row else 0, 6)
-            )
+            ).pack(side="left")
+            ttk.Button(
+                head,
+                text=self.tr("play_anim"),
+                style="Dark.TButton",
+                cursor="hand2",
+                command=lambda f=folder, it=items: self.play_animation(f, it),
+            ).pack(side="left", padx=(10, 0))
             row += 1
             for i, (key, fd) in enumerate(items):
                 r, c = row + i // cols, i % cols
@@ -647,7 +720,9 @@ class App(tk.Tk):
                 f'{self.tr("rotated")}: {f.get("rotated", False)}',
                 f'{self.tr("trimmed")}: {f.get("trimmed", False)}',
                 "",
-                f"Sprite output: {self.size} × {self.size}",
+                f"Sprite output: {fr.get('w', '?')} × {fr.get('h', '?')} ({self.tr('original')})"
+                if self.original_mode
+                else f"Sprite output: {self.size} × {self.size}",
             ]
             self.settings.insert("end", "\n".join(lines))
         self.settings.configure(state="disabled")
@@ -678,7 +753,7 @@ class App(tk.Tk):
         for key, rel in self.targets().items():
             f = self.data["frames"][key]["frame"]
             im = self.sheet.crop((f["x"], f["y"], f["x"] + f["w"], f["y"] + f["h"]))
-            if im.width <= self.size and im.height <= self.size:
+            if not self.original_mode and im.width <= self.size and im.height <= self.size:
                 canvas = Image.new("RGBA", (self.size, self.size), (0, 0, 0, 0))
                 canvas.paste(im, ((self.size - im.width) // 2, (self.size - im.height) // 2))
                 im = canvas
@@ -694,20 +769,16 @@ class App(tk.Tk):
         self.status.config(text=self.tr("done").format(n=n))
         messagebox.showinfo("TextureSplitter", self.tr("done").format(n=n))
 
-    def open_output(self):
-        if not self.out:
-            return
-        self.out.mkdir(parents=True, exist_ok=True)
-        if os.name == "nt":
-            os.startfile(self.out)
-        elif sys.platform == "darwin":
-            subprocess.Popen(["open", str(self.out)])
-        else:
-            subprocess.Popen(["xdg-open", str(self.out)])
-
-    def toggle_max(self):
-        self.maximized = not self.maximized
-        self.state("zoomed" if self.maximized else "normal")
+    def play_animation(self, folder, items):
+        if not items:
+            return messagebox.showinfo("TextureSplitter", self.tr("no_frames"))
+        ordered = sorted(items, key=lambda kv: natural_key(Path(kv[0]).name))
+        frames = []
+        for key, fd in ordered:
+            f = fd["frame"]
+            frames.append(self.sheet.crop((f["x"], f["y"], f["x"] + f["w"], f["y"] + f["h"])))
+        label = folder if folder != "." else self.tr("root_group")
+        AnimationWindow(self, label, frames)
 
     def make_shortcut(self):
         if os.name != "nt":
@@ -716,15 +787,24 @@ class App(tk.Tk):
             desktop = Path(os.environ.get("USERPROFILE", str(Path.home()))) / "Desktop"
             desktop.mkdir(exist_ok=True)
             link = desktop / "TextureSplitter.lnk"
-            app = Path(__file__).resolve()
-            py = Path(sys.executable).with_name("pythonw.exe")
-            py = py if py.exists() else Path(sys.executable)
+            if getattr(sys, "frozen", False):
+                # Running as a PyInstaller executable: launch it directly,
+                # since __file__ would point into its ephemeral temp extraction dir.
+                target = Path(sys.executable).resolve()
+                arguments = ""
+                workdir = target.parent
+            else:
+                app = Path(__file__).resolve()
+                py = Path(sys.executable).with_name("pythonw.exe")
+                target = py if py.exists() else Path(sys.executable)
+                arguments = f'"{app}"'
+                workdir = app.parent
             ps = (
                 f"$ws=New-Object -ComObject WScript.Shell;"
                 f"$s=$ws.CreateShortcut('{link}');"
-                f"$s.TargetPath='{py}';"
-                f"$s.Arguments='\"{app}\"';"
-                f"$s.WorkingDirectory='{app.parent}';"
+                f"$s.TargetPath='{target}';"
+                f"$s.Arguments='{arguments}';"
+                f"$s.WorkingDirectory='{workdir}';"
                 f"$s.Description='TextureSplitter';"
                 f"$s.Save()"
             )
@@ -736,6 +816,98 @@ class App(tk.Tk):
             )
         except Exception:
             pass
+
+
+class AnimationWindow(tk.Toplevel):
+    def __init__(self, app, label, frames):
+        super().__init__(app)
+        self.app = app
+        self.frames = frames
+        self.idx = 0
+        self.playing = True
+        self.fps = tk.IntVar(value=10)
+        self.job = None
+        self.title(f"{app.tr('play_anim').lstrip('▶ ')} - {label}")
+        self.configure(bg=app.panel)
+        self.resizable(False, False)
+        w = max((im.width for im in frames), default=64)
+        h = max((im.height for im in frames), default=64)
+        self.disp_w, self.disp_h = max(w, 160), max(h, 160)
+        self.canvas = tk.Canvas(
+            self, width=self.disp_w, height=self.disp_h, bg="#0b1016", highlightthickness=0
+        )
+        self.canvas.pack(padx=10, pady=10)
+        ctrl = tk.Frame(self, bg=app.panel)
+        ctrl.pack(fill="x", padx=10, pady=(0, 10))
+        self.play_btn = ttk.Button(
+            ctrl, style="Dark.TButton", cursor="hand2", command=self.toggle_play
+        )
+        self.play_btn.pack(side="left")
+        ttk.Button(
+            ctrl, text=app.tr("stop"), style="Dark.TButton", cursor="hand2", command=self.stop
+        ).pack(side="left", padx=(6, 0))
+        tk.Label(ctrl, text=app.tr("speed"), bg=app.panel, fg=app.text).pack(
+            side="left", padx=(14, 4)
+        )
+        tk.Scale(
+            ctrl,
+            from_=1,
+            to=30,
+            orient="horizontal",
+            variable=self.fps,
+            bg=app.panel,
+            fg=app.text,
+            troughcolor=app.panel2,
+            highlightthickness=0,
+            command=self.on_speed,
+        ).pack(side="left", fill="x", expand=True)
+        self.protocol("WM_DELETE_WINDOW", self.close)
+        self.update_play_btn()
+        self.show_frame()
+        self.schedule()
+
+    def show_frame(self):
+        im = self.frames[self.idx]
+        bg = Image.new("RGBA", (self.disp_w, self.disp_h), (11, 16, 22, 255))
+        bg.alpha_composite(im, ((self.disp_w - im.width) // 2, (self.disp_h - im.height) // 2))
+        self.photo = ImageTk.PhotoImage(bg)
+        self.canvas.delete("all")
+        self.canvas.create_image(0, 0, anchor="nw", image=self.photo)
+
+    def schedule(self):
+        if self.job:
+            self.after_cancel(self.job)
+            self.job = None
+        if self.playing:
+            self.job = self.after(int(1000 / max(1, self.fps.get())), self.advance)
+
+    def advance(self):
+        self.idx = (self.idx + 1) % len(self.frames)
+        self.show_frame()
+        self.schedule()
+
+    def toggle_play(self):
+        self.playing = not self.playing
+        self.update_play_btn()
+        self.schedule()
+
+    def stop(self):
+        self.playing = False
+        self.idx = 0
+        self.update_play_btn()
+        self.schedule()
+        self.show_frame()
+
+    def on_speed(self, _=None):
+        self.schedule()
+
+    def update_play_btn(self):
+        self.play_btn.config(text=self.app.tr("pause") if self.playing else self.app.tr("play"))
+
+    def close(self):
+        if self.job:
+            self.after_cancel(self.job)
+        self.destroy()
 
 
 if __name__ == "__main__":

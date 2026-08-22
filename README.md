@@ -165,6 +165,28 @@ Output directory 'output' is not empty. Clear it before continuing? [y/N]:
   writes/overwrites frames for whatever spritesheets it finds, but stale files
   from previous runs are not removed.
 
+## Building a standalone executable
+
+You can package the GUI and CLI into standalone binaries (no Python
+installation required to run them) using [PyInstaller](https://pyinstaller.org/).
+Each platform's binary must be built on that platform — there's no
+cross-compiling.
+
+- **macOS**: `./build_mac.sh`
+- **Windows**: double-click `build_windows.bat` (or run it from a terminal)
+
+Both scripts create/reuse a `.venv`, install `requirements.txt` and
+`requirements-build.txt` (just `pyinstaller`), then build from
+`TextureSplitter.spec` (GUI) and `TextureSplitterCLI.spec` (CLI). Output lands
+in `dist/`:
+
+- `dist/TextureSplitter.app` (macOS) / `dist/TextureSplitter.exe` (Windows) — the GUI
+- `dist/TextureSplitterCLI` (macOS) / `dist/TextureSplitterCLI.exe` (Windows) — the CLI
+
+Note: PyInstaller bundles the Python bytecode into the executable, it doesn't
+protect it — tools like `pyinstxtractor` can extract it back out. It hides the
+`.py` source from a casual user, not from someone deliberately reverse-engineering it.
+
 ## Quality notes
 
 - Frames are cropped pixel-for-pixel from the source sheet — no resampling or

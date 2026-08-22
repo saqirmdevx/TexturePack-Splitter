@@ -9,5 +9,9 @@ __pycache__/
 output/*
 !output/.gitkeep
 
+# PyInstaller build output
+build/
+dist/
+
 # OS junk
 .DS_Store

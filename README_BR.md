@@ -170,6 +170,29 @@ Output directory 'output' is not empty. Clear it before continuing? [y/N]:
   execução ainda grava/sobrescreve os frames dos spritesheets encontrados,
   mas arquivos antigos de execuções anteriores não são removidos.
 
+## Gerando um executável independente
+
+Você pode empacotar a GUI e a CLI em binários independentes (sem precisar de
+Python instalado para executá-los) usando o
+[PyInstaller](https://pyinstaller.org/). O binário de cada plataforma precisa
+ser gerado nessa mesma plataforma — não há compilação cruzada.
+
+- **macOS**: `./build_mac.sh`
+- **Windows**: dê duplo clique em `build_windows.bat` (ou execute em um terminal)
+
+Ambos os scripts criam/reaproveitam um `.venv`, instalam `requirements.txt` e
+`requirements-build.txt` (apenas o `pyinstaller`) e então geram o build a
+partir de `TextureSplitter.spec` (GUI) e `TextureSplitterCLI.spec` (CLI). O
+resultado fica em `dist/`:
+
+- `dist/TextureSplitter.app` (macOS) / `dist/TextureSplitter.exe` (Windows) — a GUI
+- `dist/TextureSplitterCLI` (macOS) / `dist/TextureSplitterCLI.exe` (Windows) — a CLI
+
+Observação: o PyInstaller empacota o bytecode Python dentro do executável, mas
+não o protege — ferramentas como `pyinstxtractor` conseguem extraí-lo de
+volta. Ele esconde o código-fonte `.py` de um usuário casual, não de alguém
+disposto a fazer engenharia reversa.
+
 ## Notas de qualidade
 
 - Os frames são recortados pixel a pixel da imagem de origem — nenhuma
