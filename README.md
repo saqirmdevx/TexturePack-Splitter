@@ -1,7 +1,28 @@
 # TextureSplitter
 
 Splits TexturePacker-style spritesheets (PNG + JSON) into individual frame
-images, organized into per-animation folders.
+images, organized into per-animation folders. Comes with both a command-line
+script and a desktop GUI.
+
+*Português (Brasil): [README_BR.md](README_BR.md)*
+
+## Features
+
+- **GUI** (`app.py`): pick the PNG + JSON from a file picker, choose a sprite
+  size (16, 32, 48, 64, 96, 128, 256, 512, or custom), preview every sprite,
+  inspect its JSON metadata (`frame`, `anchor`, `spriteSourceSize`,
+  `sourceSize`, `rotated`, `trimmed`), and export straight to a folder you
+  choose.
+  - `64 x 64` by default; the artwork is never resized, only centered on a
+    transparent canvas.
+  - Output mirrors the JSON's `animations` block into per-animation folders;
+    without `animations`, output is flat.
+  - Available in Portuguese, English, Spanish, 中文, and Slovak.
+  - On Windows, tries to create a `TextureSplitter.lnk` shortcut on the
+    desktop.
+- **CLI** (`split_spritesheet.py`): batch-processes every spritesheet found
+  under `input/`, with an optional `-fs` flag to pad frames onto a fixed-size
+  canvas.
 
 ## 1. Install Python
 
@@ -19,13 +40,15 @@ You need Python 3.8 or newer.
   and run it (check "Add python.exe to PATH" during setup).
 - **Linux**: Install via your package manager, e.g.:
   ```bash
-  sudo apt install python3 python3-venv
+  sudo apt install python3 python3-venv python3-tk
   ```
+  (`python3-tk` is required for the GUI; the CLI script doesn't need it.)
 
 ## 2. Install the requirements
 
-From the project folder, create a virtual environment and install dependencies
-(currently just [Pillow](https://python-pillow.org/), the image library):
+From the project folder, create a virtual environment and install
+dependencies (currently just [Pillow](https://python-pillow.org/), the image
+library):
 
 ```bash
 python3 -m venv .venv
@@ -47,7 +70,27 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-## 3. Run the script
+The GUI additionally needs `tkinter`, which ships with the standard Python
+installer on Windows/macOS. On Linux, install it separately (see above) since
+it isn't distributed via pip.
+
+## 3. Run it
+
+### GUI
+
+With the virtual environment activated, run:
+
+```bash
+python app.py
+```
+
+On Windows you can also double-click `run_TextureSplitter.bat`.
+
+Select the PNG and JSON files, pick a sprite size, choose an output folder,
+and click **CUT IMAGES**. Use the language button in the top-right corner to
+switch the interface language.
+
+### CLI
 
 With the virtual environment activated, run it from the project folder:
 
@@ -56,7 +99,8 @@ python split_spritesheet.py
 ```
 
 Input and output folders are fixed — always `input/` and `output/` next to the
-script, no path flags needed.
+script, no path flags needed. On macOS/Linux you can also use `./run.sh`, and
+on Windows `run.bat` (both expect the `.venv` folder to already exist).
 
 ### Options
 

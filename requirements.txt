@@ -1,1 +1,5 @@
 Pillow
+
+# The GUI (app.py) also needs tkinter, which ships with the standard Python
+# installer on Windows/macOS. On Linux, install it via your package manager
+# instead (e.g. `sudo apt install python3-tk`) since it isn't on PyPI.
