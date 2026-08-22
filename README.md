@@ -8,9 +8,10 @@ script and a desktop GUI.
 
 ## Features
 
-- **GUI** (`app.py`): pick the PNG + JSON from a file picker, choose a sprite
-  size (16, 32, 48, 64, 96, 128, 256, 512, or custom), preview every sprite,
-  inspect its JSON metadata (`frame`, `anchor`, `spriteSourceSize`,
+- **GUI** (`app.py`): pick the JSON from a file picker — the PNG is
+  auto-detected next to it via the JSON's `meta.image` field — choose a
+  sprite size (16, 32, 48, 64, 96, 128, 256, 512, or custom), preview every
+  sprite, inspect its JSON metadata (`frame`, `anchor`, `spriteSourceSize`,
   `sourceSize`, `rotated`, `trimmed`), and export straight to a folder you
   choose.
   - `64 x 64` by default; the artwork is never resized, only centered on a
@@ -86,9 +87,10 @@ python app.py
 
 On Windows you can also double-click `run_TextureSplitter.bat`.
 
-Select the PNG and JSON files, pick a sprite size, choose an output folder,
-and click **CUT IMAGES**. Use the language button in the top-right corner to
-switch the interface language.
+Select the JSON file (its PNG is loaded automatically from `meta.image`),
+pick a sprite size, choose an output folder, and click **CUT IMAGES**. Use
+the language button in the top-right corner to switch the interface
+language.
 
 ### CLI
 

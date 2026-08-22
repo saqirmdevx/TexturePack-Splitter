@@ -8,8 +8,9 @@ linha de comando quanto uma interface gráfica (GUI) para desktop.
 
 ## Recursos
 
-- **GUI** (`app.py`): selecione o PNG + JSON por uma janela de arquivos,
-  escolha um tamanho de sprite (16, 32, 48, 64, 96, 128, 256, 512 ou
+- **GUI** (`app.py`): selecione o JSON por uma janela de arquivos — o PNG é
+  detectado automaticamente ao lado dele através do campo `meta.image` do
+  JSON — escolha um tamanho de sprite (16, 32, 48, 64, 96, 128, 256, 512 ou
   personalizado), pré-visualize cada sprite, inspecione seus metadados do
   JSON (`frame`, `anchor`, `spriteSourceSize`, `sourceSize`, `rotated`,
   `trimmed`) e exporte direto para a pasta que você escolher.
@@ -87,9 +88,10 @@ python app.py
 
 No Windows você também pode dar duplo clique em `run_TextureSplitter.bat`.
 
-Selecione os arquivos PNG e JSON, escolha um tamanho de sprite, escolha uma
-pasta de saída e clique em **CORTAR IMAGENS**. Use o botão de idioma no canto
-superior direito para trocar o idioma da interface.
+Selecione o arquivo JSON (o PNG correspondente é carregado automaticamente a
+partir de `meta.image`), escolha um tamanho de sprite, escolha uma pasta de
+saída e clique em **CORTAR IMAGENS**. Use o botão de idioma no canto superior
+direito para trocar o idioma da interface.
 
 ### CLI
 
