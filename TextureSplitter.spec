@@ -34,13 +34,14 @@ exe = EXE(
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,
+    icon="assets/favicon.png",
 )
 
 if sys.platform == "darwin":
     app = BUNDLE(
         exe,
         name="TextureSplitter.app",
-        icon="assets/favicon.icns",
+        icon="assets/favicon.png",
         bundle_identifier="com.saqirmdevx.texturesplitter",
         info_plist={"NSHighResolutionCapable": True},
     )
