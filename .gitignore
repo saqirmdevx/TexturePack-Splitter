@@ -1,0 +1,13 @@
+# Virtual environment
+.venv/
+
+# Python bytecode / cache
+__pycache__/
+*.pyc
+
+# Generated output (regenerate with split_spritesheet.py)
+output/*
+!output/.gitkeep
+
+# OS junk
+.DS_Store
