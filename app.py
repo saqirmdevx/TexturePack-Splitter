@@ -79,6 +79,7 @@ T = {
         "pause": "Pausar",
         "stop": "Parar",
         "speed": "Velocidade:",
+        "zoom": "Zoom:",
         "no_frames": "Nenhum sprite nesta pasta.",
     },
     "en": {
@@ -113,6 +114,7 @@ T = {
         "pause": "Pause",
         "stop": "Stop",
         "speed": "Speed:",
+        "zoom": "Zoom:",
         "no_frames": "No sprites in this folder.",
     },
     "es": {
@@ -147,6 +149,7 @@ T = {
         "pause": "Pausar",
         "stop": "Detener",
         "speed": "Velocidad:",
+        "zoom": "Zoom:",
         "no_frames": "No hay sprites en esta carpeta.",
     },
     "zh": {
@@ -181,6 +184,7 @@ T = {
         "pause": "暂停",
         "stop": "停止",
         "speed": "速度：",
+        "zoom": "缩放：",
         "no_frames": "此文件夹中没有 Sprite。",
     },
     "sk": {
@@ -215,6 +219,7 @@ T = {
         "pause": "Pauza",
         "stop": "Zastaviť",
         "speed": "Rýchlosť:",
+        "zoom": "Priblíženie:",
         "no_frames": "V tomto priečinku nie sú žiadne sprity.",
     },
 }
@@ -227,6 +232,7 @@ class App(tk.Tk):
         self.png = None
         self.json_path = None
         self.out = None
+        self.anim_zoom = 1.0
         self.data = None
         self.sheet = None
         self.selected = None
@@ -559,6 +565,9 @@ class App(tk.Tk):
         if out and Path(out).is_dir():
             self.out = Path(out)
             self.out_var.set(str(self.out))
+        zoom = state.get("anim_zoom")
+        if isinstance(zoom, (int, float)) and zoom in ZOOM_STEPS:
+            self.anim_zoom = float(zoom)
 
     def save_session(self):
         try:
@@ -569,6 +578,7 @@ class App(tk.Tk):
                     {
                         "json_path": str(self.json_path) if self.json_path else None,
                         "out": str(self.out) if self.out else None,
+                        "anim_zoom": self.anim_zoom,
                     }
                 ),
                 encoding="utf-8",
@@ -838,6 +848,10 @@ class App(tk.Tk):
             pass
 
 
+ZOOM_STEPS = [0.5, 1, 2, 4, 8, 16]
+ZOOM_MAX_CANVAS = 640
+
+
 class AnimationWindow(tk.Toplevel):
     def __init__(self, app, label, frames):
         super().__init__(app)
@@ -846,13 +860,16 @@ class AnimationWindow(tk.Toplevel):
         self.idx = 0
         self.playing = True
         self.fps = tk.IntVar(value=10)
+        self.zoom = app.anim_zoom if app.anim_zoom in ZOOM_STEPS else 1.0
         self.job = None
         self.title(f"{app.tr('play_anim').lstrip('▶ ')} - {label}")
         self.configure(bg=app.panel)
         self.resizable(False, False)
         w = max((im.width for im in frames), default=64)
         h = max((im.height for im in frames), default=64)
-        self.disp_w, self.disp_h = max(w, 160), max(h, 160)
+        self.base_disp_w, self.base_disp_h = max(w, 160), max(h, 160)
+        self.disp_w = min(int(self.base_disp_w * self.zoom), ZOOM_MAX_CANVAS)
+        self.disp_h = min(int(self.base_disp_h * self.zoom), ZOOM_MAX_CANVAS)
         self.canvas = tk.Canvas(
             self, width=self.disp_w, height=self.disp_h, bg="#0b1016", highlightthickness=0
         )
@@ -881,15 +898,74 @@ class AnimationWindow(tk.Toplevel):
             highlightthickness=0,
             command=self.on_speed,
         ).pack(side="left", fill="x", expand=True)
+        tk.Label(ctrl, text=app.tr("zoom"), bg=app.panel, fg=app.text).pack(
+            side="left", padx=(14, 4)
+        )
+        self.zoom_out_btn = ttk.Button(
+            ctrl, text="-", style="Dark.TButton", cursor="hand2", width=2, command=self.zoom_out
+        )
+        self.zoom_out_btn.pack(side="left")
+        self.zoom_label = tk.Label(
+            ctrl, text=self.format_zoom(), bg=app.panel, fg=app.text, width=4, anchor="center"
+        )
+        self.zoom_label.pack(side="left", padx=4)
+        self.zoom_in_btn = ttk.Button(
+            ctrl, text="+", style="Dark.TButton", cursor="hand2", width=2, command=self.zoom_in
+        )
+        self.zoom_in_btn.pack(side="left")
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.update_play_btn()
+        self.update_zoom_btns()
         self.show_frame()
         self.schedule()
 
+    def format_zoom(self):
+        z = self.zoom
+        return f"{z:g}x"
+
+    def apply_zoom(self, zoom):
+        self.zoom = zoom
+        self.disp_w = min(int(self.base_disp_w * zoom), ZOOM_MAX_CANVAS)
+        self.disp_h = min(int(self.base_disp_h * zoom), ZOOM_MAX_CANVAS)
+        self.canvas.config(width=self.disp_w, height=self.disp_h)
+        self.zoom_label.config(text=self.format_zoom())
+        self.update_zoom_btns()
+        self.show_frame()
+        self.app.anim_zoom = zoom
+        self.app.save_session()
+
+    def zoom_in(self):
+        larger = [z for z in ZOOM_STEPS if z > self.zoom]
+        if larger:
+            self.apply_zoom(larger[0])
+
+    def zoom_out(self):
+        smaller = [z for z in ZOOM_STEPS if z < self.zoom]
+        if smaller:
+            self.apply_zoom(smaller[-1])
+
+    def update_zoom_btns(self):
+        self.zoom_out_btn.config(
+            state="disabled" if self.zoom <= ZOOM_STEPS[0] else "normal"
+        )
+        self.zoom_in_btn.config(
+            state="disabled" if self.zoom >= ZOOM_STEPS[-1] else "normal"
+        )
+
     def show_frame(self):
         im = self.frames[self.idx]
+        if self.zoom != 1.0:
+            im = im.resize(
+                (max(1, int(im.width * self.zoom)), max(1, int(im.height * self.zoom))),
+                Image.NEAREST,
+            )
         bg = Image.new("RGBA", (self.disp_w, self.disp_h), (11, 16, 22, 255))
-        bg.alpha_composite(im, ((self.disp_w - im.width) // 2, (self.disp_h - im.height) // 2))
+        x = (self.disp_w - im.width) // 2
+        y = (self.disp_h - im.height) // 2
+        if x < 0 or y < 0:
+            im = im.crop((-min(x, 0), -min(y, 0), -min(x, 0) + self.disp_w, -min(y, 0) + self.disp_h))
+            x, y = max(x, 0), max(y, 0)
+        bg.alpha_composite(im, (x, y))
         self.photo = ImageTk.PhotoImage(bg)
         self.canvas.delete("all")
         self.canvas.create_image(0, 0, anchor="nw", image=self.photo)

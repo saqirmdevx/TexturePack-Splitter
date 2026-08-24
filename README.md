@@ -187,6 +187,15 @@ Note: PyInstaller bundles the Python bytecode into the executable, it doesn't
 protect it — tools like `pyinstxtractor` can extract it back out. It hides the
 `.py` source from a casual user, not from someone deliberately reverse-engineering it.
 
+### Prebuilt builds via GitHub Actions
+
+Every push to `main` (and every pull request) triggers the
+[Build Desktop Apps](.github/workflows/build.yml) workflow, which builds the
+GUI and CLI for both macOS and Windows and uploads them as workflow artifacts.
+To grab a build without building it yourself: open the workflow run under the
+repo's **Actions** tab and download the artifact zip from the run summary
+page.
+
 ## Quality notes
 
 - Frames are cropped pixel-for-pixel from the source sheet — no resampling or
