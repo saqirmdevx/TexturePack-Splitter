@@ -28,10 +28,10 @@ jobs:
         run: echo "value=$(python -c 'from version import __version__; print(__version__)')" >> "$GITHUB_OUTPUT"
 
       - name: Build GUI app
-        run: pyinstaller --noconfirm TextureSplitter.spec
+        run: python -m PyInstaller --noconfirm TextureSplitter.spec
 
       - name: Build CLI
-        run: pyinstaller --noconfirm TextureSplitterCLI.spec
+        run: python -m PyInstaller --noconfirm TextureSplitterCLI.spec
 
       - name: Package macOS app bundle
         run: |
@@ -71,10 +71,10 @@ jobs:
         run: echo "value=$(python -c 'from version import __version__; print(__version__)')" >> "$GITHUB_OUTPUT"
 
       - name: Build GUI app
-        run: pyinstaller --noconfirm TextureSplitter.spec
+        run: python -m PyInstaller --noconfirm TextureSplitter.spec
 
       - name: Build CLI
-        run: pyinstaller --noconfirm TextureSplitterCLI.spec
+        run: python -m PyInstaller --noconfirm TextureSplitterCLI.spec
 
       - name: Upload Windows app
         uses: actions/upload-artifact@v4
