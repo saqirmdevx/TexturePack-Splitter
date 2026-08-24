@@ -20,13 +20,10 @@ if errorlevel 1 goto :error
 
 "%PY%" -m PyInstaller --noconfirm TextureSplitter.spec
 if errorlevel 1 goto :error
-"%PY%" -m PyInstaller --noconfirm TextureSplitterCLI.spec
-if errorlevel 1 goto :error
 
 echo.
-echo Done. Executables are in the dist\ folder:
+echo Done. Executable is in the dist\ folder:
 echo   dist\TextureSplitter.exe      (GUI)
-echo   dist\TextureSplitterCLI.exe   (CLI)
 pause
 exit /b 0
 

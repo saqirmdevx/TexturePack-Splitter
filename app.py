@@ -16,6 +16,19 @@ def natural_key(s):
     return [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", s)]
 
 
+def untrim_frame(cropped, frame_data):
+    """Restore a trimmed frame onto its full sourceSize canvas at its spriteSourceSize offset."""
+    if not frame_data.get("trimmed"):
+        return cropped
+    source_size = frame_data.get("sourceSize")
+    sprite_source_size = frame_data.get("spriteSourceSize")
+    if not source_size or not sprite_source_size:
+        return cropped
+    canvas = Image.new("RGBA", (source_size["w"], source_size["h"]), (0, 0, 0, 0))
+    canvas.paste(cropped, (sprite_source_size["x"], sprite_source_size["y"]))
+    return canvas
+
+
 def session_path():
     if os.name == "nt":
         base = Path(os.environ.get("APPDATA", str(Path.home())))
@@ -685,6 +698,7 @@ class App(tk.Tk):
                 card.grid(row=r, column=c, padx=5, pady=5, sticky="n")
                 f = fd["frame"]
                 im = self.sheet.crop((f["x"], f["y"], f["x"] + f["w"], f["y"] + f["h"]))
+                im = untrim_frame(im, fd)
                 scale = min(110 / max(im.width, im.height), 1)
                 im = im.resize(
                     (max(1, int(im.width * scale)), max(1, int(im.height * scale))),
@@ -781,8 +795,10 @@ class App(tk.Tk):
         dpi = self.sheet.info.get("dpi")
         n = 0
         for key, rel in self.targets().items():
-            f = self.data["frames"][key]["frame"]
+            fd = self.data["frames"][key]
+            f = fd["frame"]
             im = self.sheet.crop((f["x"], f["y"], f["x"] + f["w"], f["y"] + f["h"]))
+            im = untrim_frame(im, fd)
             if not self.original_mode and im.width <= self.size and im.height <= self.size:
                 canvas = Image.new("RGBA", (self.size, self.size), (0, 0, 0, 0))
                 canvas.paste(im, ((self.size - im.width) // 2, (self.size - im.height) // 2))
@@ -806,7 +822,8 @@ class App(tk.Tk):
         frames = []
         for key, fd in ordered:
             f = fd["frame"]
-            frames.append(self.sheet.crop((f["x"], f["y"], f["x"] + f["w"], f["y"] + f["h"])))
+            cropped = self.sheet.crop((f["x"], f["y"], f["x"] + f["w"], f["y"] + f["h"]))
+            frames.append(untrim_frame(cropped, fd))
         label = folder if folder != "." else self.tr("root_group")
         AnimationWindow(self, label, frames)
 

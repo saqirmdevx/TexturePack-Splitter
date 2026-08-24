@@ -57,10 +57,24 @@ def place_on_canvas(frame: Image.Image, size: int) -> Image.Image:
     return canvas
 
 
+def untrim_frame(cropped: Image.Image, frame_data: dict) -> Image.Image:
+    """Restore a trimmed frame onto its full sourceSize canvas at its spriteSourceSize offset."""
+    if not frame_data.get("trimmed"):
+        return cropped
+    source_size = frame_data.get("sourceSize")
+    sprite_source_size = frame_data.get("spriteSourceSize")
+    if not source_size or not sprite_source_size:
+        return cropped
+    canvas = Image.new("RGBA", (source_size["w"], source_size["h"]), (0, 0, 0, 0))
+    canvas.paste(cropped, (sprite_source_size["x"], sprite_source_size["y"]))
+    return canvas
+
+
 def crop_frame(sheet: Image.Image, frame_data: dict) -> Image.Image:
     f = frame_data["frame"]
     box = (f["x"], f["y"], f["x"] + f["w"], f["y"] + f["h"])
-    return sheet.crop(box)
+    cropped = sheet.crop(box)
+    return untrim_frame(cropped, frame_data)
 
 
 def build_targets(data: dict) -> dict:

@@ -30,9 +30,6 @@ jobs:
       - name: Build GUI app
         run: python -m PyInstaller --noconfirm TextureSplitter.spec
 
-      - name: Build CLI
-        run: python -m PyInstaller --noconfirm TextureSplitterCLI.spec
-
       - name: Package macOS app bundle
         run: |
           cd dist
@@ -43,12 +40,6 @@ jobs:
         with:
           name: TextureSplitter-${{ steps.version.outputs.value }}-macOS
           path: dist/TextureSplitter-${{ steps.version.outputs.value }}-macOS.zip
-
-      - name: Upload macOS CLI
-        uses: actions/upload-artifact@v4
-        with:
-          name: TextureSplitterCLI-${{ steps.version.outputs.value }}-macOS
-          path: dist/TextureSplitterCLI
 
   build-windows:
     runs-on: windows-latest
@@ -73,17 +64,8 @@ jobs:
       - name: Build GUI app
         run: python -m PyInstaller --noconfirm TextureSplitter.spec
 
-      - name: Build CLI
-        run: python -m PyInstaller --noconfirm TextureSplitterCLI.spec
-
       - name: Upload Windows app
         uses: actions/upload-artifact@v4
         with:
           name: TextureSplitter-${{ steps.version.outputs.value }}-windows
           path: dist/TextureSplitter.exe
-
-      - name: Upload Windows CLI
-        uses: actions/upload-artifact@v4
-        with:
-          name: TextureSplitterCLI-${{ steps.version.outputs.value }}-windows
-          path: dist/TextureSplitterCLI.exe

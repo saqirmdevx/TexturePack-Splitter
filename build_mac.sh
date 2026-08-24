@@ -13,9 +13,7 @@ PY=".venv/bin/python3"
 "$PY" -m pip install -r requirements.txt -r requirements-build.txt
 
 "$PY" -m PyInstaller --noconfirm TextureSplitter.spec
-"$PY" -m PyInstaller --noconfirm TextureSplitterCLI.spec
 
 echo
 echo "Done. Build output is in the dist/ folder:"
 echo "  dist/TextureSplitter.app     (GUI app bundle)"
-echo "  dist/TextureSplitterCLI      (CLI binary)"
