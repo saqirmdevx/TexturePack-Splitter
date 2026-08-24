@@ -700,6 +700,13 @@ class App(tk.Tk):
                     fg=self.text,
                     font=("Segoe UI", 7),
                     wraplength=110,
+                ).pack(pady=(0, 1))
+                tk.Label(
+                    card,
+                    text=f'{f.get("w", "?")} × {f.get("h", "?")}',
+                    bg=self.panel,
+                    fg=self.muted,
+                    font=("Segoe UI", 7),
                 ).pack(pady=(0, 4))
             row += -(-len(items) // cols)
         self.selected = next(iter(frames), None)
@@ -724,7 +731,6 @@ class App(tk.Tk):
             lines = [
                 f"Sprite: {self.selected}",
                 "",
-                f'{self.tr("source")}: {fr.get("w", "?")} × {fr.get("h", "?")}',
                 f'{self.tr("frame")}: x={fr.get("x", "?")}, y={fr.get("y", "?")}, '
                 f'w={fr.get("w", "?")}, h={fr.get("h", "?")}',
                 f'{self.tr("anchor")}: X={a.get("x", "—")}, Y={a.get("y", "—")}',
