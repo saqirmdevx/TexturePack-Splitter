@@ -33,12 +33,15 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMainWindow,
+    QMenu,
     QMessageBox,
     QPushButton,
+    QSizePolicy,
     QSlider,
     QSplitter,
     QStackedWidget,
     QToolBar,
+    QToolButton,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -48,6 +51,201 @@ from PySide6.QtWidgets import (
 import sprite_document
 from pack_spritesheet import natural_key
 from sprite_document import PIVOT_PRESETS, SpriteDocument
+
+LANGS = {
+    "pt": "🇧🇷 Português",
+    "en": "🇺🇸 English",
+    "es": "🇪🇸 Español",
+    "zh": "🇨🇳 中文",
+    "sk": "🇸🇰 Slovenčina",
+}
+
+# Positional order matches PIVOT_PRESETS' insertion order (Center, Top left,
+# Top center, Bottom center, Bottom right) so combo items can be translated
+# by index without disturbing the canonical English keys used as data.
+_PRESET_TR_KEYS = ["preset_center", "preset_top_left", "preset_top_center", "preset_bottom_center", "preset_bottom_right"]
+
+T = {
+    "en": {
+        "load_spritesheet": "Load Spritesheet",
+        "load_folder": "Load Folder",
+        "split_sheet": "Split Sheet",
+        "publish_sheet": "Publish Sprite Sheet",
+        "preview_anims": "Preview Anims",
+        "settings_title": "Settings",
+        "pivot_point": "Pivot point",
+        "enable_pivot": "Enable pivot points",
+        "absolute_x": "Absolute x:",
+        "absolute_y": "Absolute y:",
+        "normalized_x": "Normalized x:",
+        "normalized_y": "Normalized y:",
+        "predefined": "Predefined:",
+        "select_sprite": "Select a sprite to edit its pivot point.",
+        "preset_center": "Center",
+        "preset_top_left": "Top left",
+        "preset_top_center": "Top center",
+        "preset_bottom_center": "Bottom center",
+        "preset_bottom_right": "Bottom right",
+        "preview_title": "Preview Animation",
+        "play": "Play",
+        "pause": "Pause",
+        "speed": "Speed:",
+        "load_failed_title": "Load failed",
+        "split_done_title": "Split Sheet",
+        "split_done_msg": "Wrote {n} frame(s) to {out}",
+        "publish_done_title": "Publish Sprite Sheet",
+        "publish_done_msg": "Wrote {png} + {json} to {out}",
+        "dlg_load_spritesheet": "Load Spritesheet",
+        "dlg_load_folder": "Load Folder",
+        "dlg_split_folder": "Split into folder",
+        "dlg_publish": "Publish Sprite Sheet",
+        "json_filter": "Spritesheet JSON (*.json)",
+    },
+    "pt": {
+        "load_spritesheet": "Carregar Spritesheet",
+        "load_folder": "Carregar Pasta",
+        "split_sheet": "Dividir Spritesheet",
+        "publish_sheet": "Publicar Spritesheet",
+        "preview_anims": "Pré-visualizar Animações",
+        "settings_title": "Configurações",
+        "pivot_point": "Ponto de pivô",
+        "enable_pivot": "Ativar pontos de pivô",
+        "absolute_x": "Absoluto x:",
+        "absolute_y": "Absoluto y:",
+        "normalized_x": "Normalizado x:",
+        "normalized_y": "Normalizado y:",
+        "predefined": "Predefinido:",
+        "select_sprite": "Selecione um sprite para editar seu ponto de pivô.",
+        "preset_center": "Centro",
+        "preset_top_left": "Superior esquerdo",
+        "preset_top_center": "Superior centro",
+        "preset_bottom_center": "Inferior centro",
+        "preset_bottom_right": "Inferior direito",
+        "preview_title": "Pré-visualização da animação",
+        "play": "Reproduzir",
+        "pause": "Pausar",
+        "speed": "Velocidade:",
+        "load_failed_title": "Falha ao carregar",
+        "split_done_title": "Dividir Spritesheet",
+        "split_done_msg": "{n} frame(s) gravado(s) em {out}",
+        "publish_done_title": "Publicar Spritesheet",
+        "publish_done_msg": "{png} + {json} gravados em {out}",
+        "dlg_load_spritesheet": "Carregar Spritesheet",
+        "dlg_load_folder": "Carregar Pasta",
+        "dlg_split_folder": "Dividir para a pasta",
+        "dlg_publish": "Publicar Spritesheet",
+        "json_filter": "Spritesheet JSON (*.json)",
+    },
+    "es": {
+        "load_spritesheet": "Cargar Spritesheet",
+        "load_folder": "Cargar Carpeta",
+        "split_sheet": "Dividir Spritesheet",
+        "publish_sheet": "Publicar Spritesheet",
+        "preview_anims": "Vista previa de animaciones",
+        "settings_title": "Configuración",
+        "pivot_point": "Punto de pivote",
+        "enable_pivot": "Habilitar puntos de pivote",
+        "absolute_x": "Absoluto x:",
+        "absolute_y": "Absoluto y:",
+        "normalized_x": "Normalizado x:",
+        "normalized_y": "Normalizado y:",
+        "predefined": "Predefinido:",
+        "select_sprite": "Selecciona un sprite para editar su punto de pivote.",
+        "preset_center": "Centro",
+        "preset_top_left": "Superior izquierda",
+        "preset_top_center": "Superior centro",
+        "preset_bottom_center": "Inferior centro",
+        "preset_bottom_right": "Inferior derecha",
+        "preview_title": "Vista previa de animación",
+        "play": "Reproducir",
+        "pause": "Pausar",
+        "speed": "Velocidad:",
+        "load_failed_title": "Error al cargar",
+        "split_done_title": "Dividir Spritesheet",
+        "split_done_msg": "Se guardaron {n} frame(s) en {out}",
+        "publish_done_title": "Publicar Spritesheet",
+        "publish_done_msg": "Se guardaron {png} + {json} en {out}",
+        "dlg_load_spritesheet": "Cargar Spritesheet",
+        "dlg_load_folder": "Cargar Carpeta",
+        "dlg_split_folder": "Dividir en carpeta",
+        "dlg_publish": "Publicar Spritesheet",
+        "json_filter": "Spritesheet JSON (*.json)",
+    },
+    "zh": {
+        "load_spritesheet": "加载 Spritesheet",
+        "load_folder": "加载文件夹",
+        "split_sheet": "拆分 Spritesheet",
+        "publish_sheet": "发布 Spritesheet",
+        "preview_anims": "预览动画",
+        "settings_title": "设置",
+        "pivot_point": "锚点",
+        "enable_pivot": "启用锚点",
+        "absolute_x": "绝对 x：",
+        "absolute_y": "绝对 y：",
+        "normalized_x": "归一化 x：",
+        "normalized_y": "归一化 y：",
+        "predefined": "预设：",
+        "select_sprite": "选择一个 Sprite 以编辑其锚点。",
+        "preset_center": "居中",
+        "preset_top_left": "左上",
+        "preset_top_center": "上居中",
+        "preset_bottom_center": "下居中",
+        "preset_bottom_right": "右下",
+        "preview_title": "动画预览",
+        "play": "播放",
+        "pause": "暂停",
+        "speed": "速度：",
+        "load_failed_title": "加载失败",
+        "split_done_title": "拆分 Spritesheet",
+        "split_done_msg": "已写入 {n} 个帧到 {out}",
+        "publish_done_title": "发布 Spritesheet",
+        "publish_done_msg": "已写入 {png} + {json} 到 {out}",
+        "dlg_load_spritesheet": "加载 Spritesheet",
+        "dlg_load_folder": "加载文件夹",
+        "dlg_split_folder": "拆分到文件夹",
+        "dlg_publish": "发布 Spritesheet",
+        "json_filter": "Spritesheet JSON (*.json)",
+    },
+    "sk": {
+        "load_spritesheet": "Načítať Spritesheet",
+        "load_folder": "Načítať priečinok",
+        "split_sheet": "Rozdeliť Spritesheet",
+        "publish_sheet": "Publikovať Spritesheet",
+        "preview_anims": "Náhľad animácií",
+        "settings_title": "Nastavenia",
+        "pivot_point": "Bod otáčania",
+        "enable_pivot": "Povoliť body otáčania",
+        "absolute_x": "Absolútne x:",
+        "absolute_y": "Absolútne y:",
+        "normalized_x": "Normalizované x:",
+        "normalized_y": "Normalizované y:",
+        "predefined": "Predvolené:",
+        "select_sprite": "Vyberte sprite na úpravu jeho bodu otáčania.",
+        "preset_center": "Stred",
+        "preset_top_left": "Vľavo hore",
+        "preset_top_center": "Hore v strede",
+        "preset_bottom_center": "Dole v strede",
+        "preset_bottom_right": "Vpravo dole",
+        "preview_title": "Náhľad animácie",
+        "play": "Prehrať",
+        "pause": "Pauza",
+        "speed": "Rýchlosť:",
+        "load_failed_title": "Načítanie zlyhalo",
+        "split_done_title": "Rozdeliť Spritesheet",
+        "split_done_msg": "Zapísaných {n} snímok do {out}",
+        "publish_done_title": "Publikovať Spritesheet",
+        "publish_done_msg": "Zapísané {png} + {json} do {out}",
+        "dlg_load_spritesheet": "Načítať Spritesheet",
+        "dlg_load_folder": "Načítať priečinok",
+        "dlg_split_folder": "Rozdeliť do priečinka",
+        "dlg_publish": "Publikovať Spritesheet",
+        "json_filter": "Spritesheet JSON (*.json)",
+    },
+}
+
+
+def t(lang: str, key: str) -> str:
+    return T.get(lang, T["en"]).get(key, T["en"].get(key, key))
 
 if getattr(sys, "frozen", False):
     ICON_PATH = Path(sys._MEIPASS) / "favicon.png"
@@ -228,8 +426,8 @@ class Canvas:
             y = cell_y + (self.CELL - disp_h) / 2
 
             if key in selected:
-                border = QGraphicsRectItem(x - 2, y - 2, disp_w + 4, disp_h + 4)
-                border.setPen(QPen(QColor("red"), 2))
+                border = QGraphicsRectItem(x - 1, y - 1, disp_w + 2, disp_h + 2)
+                border.setPen(QPen(QColor(46, 204, 113), 1))
                 self.scene.addItem(border)
 
             item = QGraphicsPixmapItem(pixmap)
@@ -267,8 +465,9 @@ class PivotPanel(QWidget):
         self._on_change = on_change
         self._doc = None
         self._keys = []
+        self.lang = "en"
 
-        self.enable_checkbox = QCheckBox("Enable pivot points")
+        self.enable_checkbox = QCheckBox()
         self.enable_checkbox.stateChanged.connect(self._on_enable_toggled)
 
         self.abs_x = QDoubleSpinBox()
@@ -286,35 +485,62 @@ class PivotPanel(QWidget):
             box.setSingleStep(0.01)
             box.valueChanged.connect(self._on_normalized_changed)
 
+        # itemData holds the canonical (untranslated) preset key so selection
+        # logic never depends on the currently displayed language.
         self.preset_combo = QComboBox()
-        self.preset_combo.addItems(list(PIVOT_PRESETS.keys()))
-        self.preset_combo.currentTextChanged.connect(self._on_preset_chosen)
+        for key in PIVOT_PRESETS:
+            self.preset_combo.addItem(key, key)
+        self.preset_combo.currentIndexChanged.connect(self._on_preset_chosen)
+
+        self.lbl_absolute_x = QLabel()
+        self.lbl_absolute_y = QLabel()
+        self.lbl_normalized_x = QLabel()
+        self.lbl_normalized_y = QLabel()
+        self.lbl_predefined = QLabel()
 
         form = QFormLayout()
         form.addRow(self.enable_checkbox)
-        form.addRow("Absolute x:", self.abs_x)
-        form.addRow("Absolute y:", self.abs_y)
-        form.addRow("Normalized x:", self.norm_x)
-        form.addRow("Normalized y:", self.norm_y)
-        form.addRow("Predefined:", self.preset_combo)
+        form.addRow(self.lbl_absolute_x, self.abs_x)
+        form.addRow(self.lbl_absolute_y, self.abs_y)
+        form.addRow(self.lbl_normalized_x, self.norm_x)
+        form.addRow(self.lbl_normalized_y, self.norm_y)
+        form.addRow(self.lbl_predefined, self.preset_combo)
         fields_widget = QWidget()
         fields_widget.setLayout(form)
 
-        placeholder = QLabel("Select a sprite to edit its pivot point.")
-        placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        placeholder.setWordWrap(True)
+        self.lbl_placeholder = QLabel()
+        self.lbl_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_placeholder.setWordWrap(True)
 
         self.stack = QStackedWidget()
-        self.stack.addWidget(placeholder)
+        self.stack.addWidget(self.lbl_placeholder)
         self.stack.addWidget(fields_widget)
 
+        self.lbl_settings_title = QLabel()
+        self.lbl_pivot_point_title = QLabel()
+
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel("<b>Settings</b>"))
-        layout.addWidget(QLabel("Pivot point"))
+        layout.addWidget(self.lbl_settings_title)
+        layout.addWidget(self.lbl_pivot_point_title)
         layout.addWidget(self.stack)
         layout.addStretch()
 
         self._set_fields_enabled(False)
+        self.set_language(self.lang)
+
+    def set_language(self, lang: str):
+        self.lang = lang
+        self.lbl_settings_title.setText(f"<b>{t(lang, 'settings_title')}</b>")
+        self.lbl_pivot_point_title.setText(t(lang, "pivot_point"))
+        self.enable_checkbox.setText(t(lang, "enable_pivot"))
+        self.lbl_absolute_x.setText(t(lang, "absolute_x"))
+        self.lbl_absolute_y.setText(t(lang, "absolute_y"))
+        self.lbl_normalized_x.setText(t(lang, "normalized_x"))
+        self.lbl_normalized_y.setText(t(lang, "normalized_y"))
+        self.lbl_predefined.setText(t(lang, "predefined"))
+        self.lbl_placeholder.setText(t(lang, "select_sprite"))
+        for i, tr_key in enumerate(_PRESET_TR_KEYS):
+            self.preset_combo.setItemText(i, t(lang, tr_key))
 
     def set_selection(self, doc: SpriteDocument, keys):
         self._doc = doc
@@ -366,15 +592,17 @@ class PivotPanel(QWidget):
         ny = self.abs_y.value() / first.image.height if first.image.height else 0.0
         self._apply_anchor((nx, ny))
 
-    def _on_preset_chosen(self, name):
-        if name in PIVOT_PRESETS:
-            self._apply_anchor(PIVOT_PRESETS[name])
+    def _on_preset_chosen(self, index):
+        key = self.preset_combo.itemData(index)
+        if key in PIVOT_PRESETS:
+            self._apply_anchor(PIVOT_PRESETS[key])
 
 
 class PreviewDialog(QDialog):
-    def __init__(self, parent, frames):
+    def __init__(self, parent, frames, lang="en"):
         super().__init__(parent)
-        self.setWindowTitle("Preview Animation")
+        self.lang = lang
+        self.setWindowTitle(t(lang, "preview_title"))
         self.frames = frames
         self.idx = 0
         self.playing = True
@@ -383,7 +611,7 @@ class PreviewDialog(QDialog):
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.label.setMinimumSize(200, 200)
 
-        self.play_btn = QPushButton("Pause")
+        self.play_btn = QPushButton(t(lang, "pause"))
         self.play_btn.clicked.connect(self._toggle)
         self.speed = QSlider(Qt.Orientation.Horizontal)
         self.speed.setRange(1, 30)
@@ -394,7 +622,7 @@ class PreviewDialog(QDialog):
         layout.addWidget(self.label)
         controls = QHBoxLayout()
         controls.addWidget(self.play_btn)
-        controls.addWidget(QLabel("Speed:"))
+        controls.addWidget(QLabel(t(lang, "speed")))
         controls.addWidget(self.speed)
         layout.addLayout(controls)
 
@@ -417,7 +645,7 @@ class PreviewDialog(QDialog):
 
     def _toggle(self):
         self.playing = not self.playing
-        self.play_btn.setText("Pause" if self.playing else "Play")
+        self.play_btn.setText(t(self.lang, "pause") if self.playing else t(self.lang, "play"))
         self._schedule()
 
 
@@ -428,6 +656,7 @@ class MainWindow(QMainWindow):
         if ICON_PATH.exists():
             self.setWindowIcon(QIcon(str(ICON_PATH)))
         self.doc = None
+        self.lang = "en"
 
         self.tree = QTreeWidget()
         self.tree.setHeaderHidden(True)
@@ -470,52 +699,83 @@ class MainWindow(QMainWindow):
         tb.setStyleSheet("QToolButton { padding: 8px 12px; } QToolBar { spacing: 6px; padding: 4px; }")
         self.addToolBar(tb)
 
-        act_load_sheet = QAction(_render_icon(_icon_picture), "Load Spritesheet", self)
-        act_load_sheet.triggered.connect(self._load_spritesheet)
-        tb.addAction(act_load_sheet)
+        self.act_load_sheet = QAction(_render_icon(_icon_picture), "", self)
+        self.act_load_sheet.triggered.connect(self._load_spritesheet)
+        tb.addAction(self.act_load_sheet)
 
-        act_load_folder = QAction(_render_icon(_icon_folder), "Load Folder", self)
-        act_load_folder.triggered.connect(self._load_folder)
-        tb.addAction(act_load_folder)
+        self.act_load_folder = QAction(_render_icon(_icon_folder), "", self)
+        self.act_load_folder.triggered.connect(self._load_folder)
+        tb.addAction(self.act_load_folder)
 
         tb.addSeparator()
 
-        self.act_split = QAction(_render_icon(_icon_split), "Split Sheet", self)
+        self.act_split = QAction(_render_icon(_icon_split), "", self)
         self.act_split.triggered.connect(self._do_split)
         self.act_split.setEnabled(False)
         tb.addAction(self.act_split)
 
-        self.act_publish = QAction(_render_icon(_icon_publish), "Publish Sprite Sheet", self)
+        self.act_publish = QAction(_render_icon(_icon_publish), "", self)
         self.act_publish.triggered.connect(self._do_publish)
         self.act_publish.setEnabled(False)
         tb.addAction(self.act_publish)
 
         tb.addSeparator()
 
-        self.act_preview = QAction(_render_icon(_icon_play), "Preview Anims", self)
+        self.act_preview = QAction(_render_icon(_icon_play), "", self)
         self.act_preview.triggered.connect(self._show_preview)
         self.act_preview.setEnabled(False)
         tb.addAction(self.act_preview)
 
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        tb.addWidget(spacer)
+
+        self.lang_button = QToolButton()
+        self.lang_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        lang_menu = QMenu(self.lang_button)
+        for code, label in LANGS.items():
+            action = lang_menu.addAction(label)
+            action.triggered.connect(lambda checked=False, c=code: self._set_language(c))
+        self.lang_button.setMenu(lang_menu)
+        tb.addWidget(self.lang_button)
+
+        self._retranslate()
+
+    def _set_language(self, lang: str):
+        self.lang = lang
+        self._retranslate()
+
+    def _retranslate(self):
+        lang = self.lang
+        self.act_load_sheet.setText(t(lang, "load_spritesheet"))
+        self.act_load_folder.setText(t(lang, "load_folder"))
+        self.act_split.setText(t(lang, "split_sheet"))
+        self.act_publish.setText(t(lang, "publish_sheet"))
+        self.act_preview.setText(t(lang, "preview_anims"))
+        self.lang_button.setText("🌐 " + LANGS[lang])
+        self.pivot_panel.set_language(lang)
+
     def _load_spritesheet(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Load Spritesheet", "", "Spritesheet JSON (*.json)")
+        path, _ = QFileDialog.getOpenFileName(
+            self, t(self.lang, "dlg_load_spritesheet"), "", t(self.lang, "json_filter")
+        )
         if not path:
             return
         try:
             doc = sprite_document.load_from_spritesheet(Path(path))
         except Exception as e:
-            QMessageBox.critical(self, "Load failed", str(e))
+            QMessageBox.critical(self, t(self.lang, "load_failed_title"), str(e))
             return
         self._set_document(doc)
 
     def _load_folder(self):
-        path = QFileDialog.getExistingDirectory(self, "Load Folder")
+        path = QFileDialog.getExistingDirectory(self, t(self.lang, "dlg_load_folder"))
         if not path:
             return
         try:
             doc = sprite_document.load_from_folder(Path(path))
         except Exception as e:
-            QMessageBox.critical(self, "Load failed", str(e))
+            QMessageBox.critical(self, t(self.lang, "load_failed_title"), str(e))
             return
         self._set_document(doc)
 
@@ -536,24 +796,28 @@ class MainWindow(QMainWindow):
     def _do_split(self):
         if not self.doc:
             return
-        out = QFileDialog.getExistingDirectory(self, "Split into folder")
+        out = QFileDialog.getExistingDirectory(self, t(self.lang, "dlg_split_folder"))
         if not out:
             return
         n = sprite_document.export_split(self.doc, Path(out))
-        QMessageBox.information(self, "Split Sheet", f"Wrote {n} frame(s) to {out}")
+        QMessageBox.information(
+            self, t(self.lang, "split_done_title"), t(self.lang, "split_done_msg").format(n=n, out=out)
+        )
 
     def _do_publish(self):
         if not self.doc:
             return
         path, _ = QFileDialog.getSaveFileName(
-            self, "Publish Sprite Sheet", f"{self.doc.name}.json", "Spritesheet JSON (*.json)"
+            self, t(self.lang, "dlg_publish"), f"{self.doc.name}.json", t(self.lang, "json_filter")
         )
         if not path:
             return
         save_path = Path(path)
         png_path, json_path = sprite_document.export_publish(self.doc, save_path.parent, name=save_path.stem)
         QMessageBox.information(
-            self, "Publish Sprite Sheet", f"Wrote {png_path.name} + {json_path.name} to {save_path.parent}"
+            self,
+            t(self.lang, "publish_done_title"),
+            t(self.lang, "publish_done_msg").format(png=png_path.name, json=json_path.name, out=save_path.parent),
         )
 
     def _show_preview(self):
@@ -563,7 +827,7 @@ class MainWindow(QMainWindow):
         frames = [self.doc.frames[k] for k in sorted(keys, key=sort_key)]
         if not frames:
             return
-        PreviewDialog(self, frames).exec()
+        PreviewDialog(self, frames, lang=self.lang).exec()
 
 
 def main():
