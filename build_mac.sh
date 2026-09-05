@@ -10,7 +10,7 @@ fi
 PY=".venv/bin/python3"
 
 "$PY" -m pip install --upgrade pip
-"$PY" -m pip install -r requirements.txt -r requirements-build.txt
+"$PY" -m pip install -r requirements.txt -r requirements-build.txt -r requirements-gui.txt
 
 "$PY" -m PyInstaller --noconfirm TextureSplitter.spec
 

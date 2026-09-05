@@ -1,0 +1,4 @@
+PySide6
+
+# Only needed for gui_app.py (the new PySide6 GUI). The CLI scripts and the
+# legacy Tkinter GUI (app.py) don't need this.

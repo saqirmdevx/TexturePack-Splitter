@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Split TexturePacker-style spritesheets (PNG + JSON) into individual frame files.
 
-Recursively scans ./input for *.json files. Each JSON's "meta.image" field
-names the PNG sitting alongside it. Output mirrors each JSON's folder
-location under ./output, then splits into per-animation subfolders (or a flat
-folder if the JSON defines no "animations").
+Recursively scans an input folder (./input by default) for *.json files. Each
+JSON's "meta.image" field names the PNG sitting alongside it. Output mirrors
+each JSON's folder location under the output folder (./output by default),
+then splits into per-animation subfolders (or a flat folder if the JSON
+defines no "animations").
 
 Usage:
     python split_spritesheet.py
     python split_spritesheet.py -fs 64   # pad every frame onto a 64x64 transparent canvas
+    python split_spritesheet.py -i path/to/spritesheets -o path/to/out
 """
 
 import argparse
@@ -170,32 +172,39 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("-fs", "--frame-size", type=int, default=None,
                          help="pad each frame onto an NxN transparent canvas, centered, without resizing")
+    parser.add_argument("-i", "--input", type=Path, default=INPUT_DIR,
+                         help=f"folder to recursively scan for spritesheet .json files (default: {INPUT_DIR})")
+    parser.add_argument("-o", "--output", type=Path, default=OUTPUT_DIR,
+                         help=f"folder to write split frames to (default: {OUTPUT_DIR})")
     parser.add_argument("-v", "--version", action="version", version=f"TextureSplitter {__version__}")
     args = parser.parse_args()
 
-    if not INPUT_DIR.is_dir():
-        print(f"error: input directory '{INPUT_DIR}' not found", file=sys.stderr)
+    input_dir = args.input
+    output_dir = args.output
+
+    if not input_dir.is_dir():
+        print(f"error: input directory '{input_dir}' not found", file=sys.stderr)
         sys.exit(1)
 
-    json_files = sorted(INPUT_DIR.rglob("*.json"))
+    json_files = sorted(input_dir.rglob("*.json"))
     if not json_files:
-        print(f"error: no .json files found under '{INPUT_DIR}'", file=sys.stderr)
+        print(f"error: no .json files found under '{input_dir}'", file=sys.stderr)
         sys.exit(1)
 
-    prompt_clear_output(OUTPUT_DIR)
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    prompt_clear_output(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     total = 0
     for json_path in json_files:
-        rel_dir = json_path.parent.relative_to(INPUT_DIR)
-        out_dir = OUTPUT_DIR / rel_dir
+        rel_dir = json_path.parent.relative_to(input_dir)
+        out_dir = output_dir / rel_dir / json_path.stem
         out_dir.mkdir(parents=True, exist_ok=True)
         written = process_spritesheet(json_path, out_dir, args.frame_size)
         if written:
             print(f"{json_path}: wrote {written} frame(s) to {out_dir}")
         total += written
 
-    print(f"Wrote {total} frame(s) from {len(json_files)} spritesheet(s) to {OUTPUT_DIR}")
+    print(f"Wrote {total} frame(s) from {len(json_files)} spritesheet(s) to {output_dir}")
 
 
 if __name__ == "__main__":

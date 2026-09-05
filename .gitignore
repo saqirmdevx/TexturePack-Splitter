@@ -12,6 +12,8 @@ output/*
 # PyInstaller build output
 build/
 dist/
+input/
+output/
 
 # OS junk
 .DS_Store

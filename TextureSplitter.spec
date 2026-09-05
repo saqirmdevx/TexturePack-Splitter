@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-# Builds the desktop GUI (app.py) into a single windowed executable.
+# Builds the desktop GUI (gui_app.py) into a single windowed executable.
 # Run via build_windows.bat / build_mac.sh, or directly:
 #   pyinstaller --noconfirm TextureSplitter.spec
 import sys
@@ -9,7 +9,7 @@ from version import __version__
 datas = [("srgb.icc", "."), ("assets/favicon.png", ".")]
 
 a = Analysis(
-    ["app.py"],
+    ["gui_app.py"],
     pathex=[],
     binaries=[],
     datas=datas,

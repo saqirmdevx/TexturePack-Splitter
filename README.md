@@ -1,14 +1,20 @@
 # TextureSplitter
 
 Splits TexturePacker-style spritesheets (PNG + JSON) into individual frame
-images, organized into per-animation folders. Comes with both a command-line
-script and a desktop GUI.
-
-*Português (Brasil): [README_BR.md](README_BR.md)*
+images, organized into per-animation folders, and packs them back. Comes with
+command-line tools and a desktop GUI.
 
 ## Features
 
-- **GUI** (`app.py`): pick the JSON from a file picker — the PNG is
+- **GUI (new, in progress)** (`gui_app.py`): PySide6 rewrite with a 3-pane
+  layout — Explorer tree on the left, a gray zoomable canvas in the middle,
+  and a pivot-point (anchor) editor on the right. Load a spritesheet JSON or
+  a folder of frame images, multi-select frames in the Explorer, set their
+  normalized pivot point (typed values or presets: Center, Top left, Top
+  center, Bottom center, Bottom right), then **Split Sheet** or **Publish
+  Sprite Sheet** to export. Coexists with the legacy GUI below; see
+  [Running the new GUI](#running-the-new-gui-preview) below.
+- **GUI (legacy)** (`app.py`): pick the JSON from a file picker — the PNG is
   auto-detected next to it via the JSON's `meta.image` field — choose a
   sprite size (16, 32, 48, 64, 96, 128, 256, 512, or custom), preview every
   sprite, inspect its JSON metadata (`frame`, `anchor`, `spriteSourceSize`,
@@ -24,6 +30,8 @@ script and a desktop GUI.
 - **CLI** (`split_spritesheet.py`): batch-processes every spritesheet found
   under `input/`, with an optional `-fs` flag to pad frames onto a fixed-size
   canvas.
+- **Packer CLI** (`pack_spritesheet.py`): the inverse of the splitter — packs
+  a folder of individual frame images back into one spritesheet PNG + JSON.
 
 ## 1. Install Python
 
@@ -71,13 +79,42 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-The GUI additionally needs `tkinter`, which ships with the standard Python
-installer on Windows/macOS. On Linux, install it separately (see above) since
-it isn't distributed via pip.
+The legacy GUI additionally needs `tkinter`, which ships with the standard
+Python installer on Windows/macOS. On Linux, install it separately (see
+above) since it isn't distributed via pip. The new GUI needs `PySide6`
+instead — install it with:
+
+```bash
+pip install -r requirements-gui.txt
+```
 
 ## 3. Run it
 
-### GUI
+### Running the new GUI (preview)
+
+With `requirements-gui.txt` installed and the virtual environment activated:
+
+```bash
+python gui_app.py
+```
+
+Use **Load Spritesheet** (a JSON+PNG pair) or **Load Folder** (a folder of
+loose frame images, subfolders becoming animations) to populate the
+Explorer. Select one or more frames there — folders select every frame
+inside them — to filter the canvas and enable the pivot-point editor on the
+right: check **Enable pivot points**, then type normalized `x`/`y` values,
+their pixel-space equivalents, or pick a preset; it applies to every frame
+currently selected. **Split Sheet** exports the loaded frames individually;
+**Publish Sprite Sheet** repacks them into a new spritesheet PNG+JSON,
+writing each frame's edited pivot point into its `"anchor"` field (or the
+default center for every frame if pivot points are left disabled).
+
+This GUI is still early — the Explorer only holds one loaded document at a
+time (loading something new replaces it), and canvas thumbnails aren't yet
+clickable for selection (use the Explorer tree). The legacy Tkinter GUI below
+remains fully functional.
+
+### Legacy GUI
 
 With the virtual environment activated, run:
 
@@ -100,8 +137,8 @@ With the virtual environment activated, run it from the project folder:
 python split_spritesheet.py
 ```
 
-Input and output folders are fixed — always `input/` and `output/` next to the
-script, no path flags needed. On macOS/Linux you can also use `./run.sh`, and
+By default it reads from `input/` and writes to `output/`, both next to the
+script — no path flags needed. On macOS/Linux you can also use `./run.sh`, and
 on Windows `run.bat` (both expect the `.venv` folder to already exist).
 
 ### Options
@@ -109,48 +146,62 @@ on Windows `run.bat` (both expect the `.venv` folder to already exist).
 | Flag | Description | Default |
 |---|---|---|
 | `-fs N`, `--frame-size N` | Pad every frame onto a centered, transparent `N x N` canvas (no resizing) | off |
+| `-i PATH`, `--input PATH` | Folder to recursively scan for spritesheet `.json` files | `input` |
+| `-o PATH`, `--output PATH` | Folder to write split frames to | `output` |
 
 Example:
 
 ```bash
 # Pad every frame to 64x64 (adds transparent space, does not scale the art)
 python split_spritesheet.py -fs 64
+
+# Split spritesheets from a different folder
+python split_spritesheet.py -i path/to/spritesheets -o path/to/out
 ```
 
 ### Input structure
 
 The script recursively scans `input/` for `.json` files. Each JSON's
-`meta.image` field names the PNG sitting next to it in the same folder, so you
-can split multiple spritesheets in one run by nesting them in subfolders:
+`meta.image` field names the PNG sitting next to it in the same folder, so
+multiple spritesheets can live side by side in the same folder or nested in
+subfolders:
 
 ```
 input/
-  creatures/
-    0/
-      spritesheet.json   # meta.image: "spritesheet.png"
-      spritesheet.png
-    1/
-      spritesheet.json
-      spritesheet.png
+  objects/
+    golds.json         # meta.image: "golds.png"
+    golds.png
+    bushes.json
+    bushes.png
+    runes/
+      haste_rune.json
+      haste_rune.png
 ```
 
 ### Output structure
 
-Each spritesheet's output mirrors its folder location under `input/`, then
-splits into animations inside that folder:
+Each spritesheet's output mirrors its JSON's folder location under `input/`,
+then adds one more folder named after the JSON file itself (its filename
+without the `.json` extension) — this keeps sheets that share a folder, or
+share frame/animation names, from overwriting each other:
 
-- If the JSON defines an `"animations"` block, frames are grouped into one
-  folder per animation, named after each frame's original filename:
+- If the JSON defines an `"animations"` block, frames are further grouped
+  into one folder per animation, named after each frame's original filename:
   ```
-  output/creatures/0/Attack/0.png
-  output/creatures/0/Attack/1.png
-  output/creatures/0/Walk/0.png
-  output/creatures/1/Attack/0.png
+  output/objects/DivineKatanaObj/Idle/1.png
+  output/objects/DivineKatanaObj/Idle/2.png
+  output/objects/DivineKatanaObj/Init/1.png
+  output/objects/runes/haste_rune/Idle/1.png
   ...
   ```
 - If no `"animations"` block is present, all frames for that spritesheet are
-  written flat into its target folder (folder path separators in the frame
-  name are replaced with `_` to keep filenames unique).
+  written flat into its target folder:
+  ```
+  output/objects/golds/1.png
+  output/objects/golds/2.png
+  output/objects/bushes/1.png
+  ...
+  ```
 
 ### Clearing old output
 
@@ -164,6 +215,44 @@ Output directory 'output' is not empty. Clear it before continuing? [y/N]:
 - `n` (or just pressing Enter) — leaves existing files alone; the run still
   writes/overwrites frames for whatever spritesheets it finds, but stale files
   from previous runs are not removed.
+
+### Packer CLI
+
+`pack_spritesheet.py` packs one folder of frame images into one spritesheet —
+the exact inverse of the splitter above. Point it at a folder produced by (or
+shaped like) the splitter's output:
+
+```bash
+python pack_spritesheet.py -i output/objects/golds -o packed
+```
+
+- Every image directly inside the input folder becomes a flat frame, keyed by
+  its filename (e.g. `"1.png"`).
+- Every image inside a subfolder becomes part of an `"animations"` entry named
+  after that subfolder's path (e.g. `"Attack/0.png"`), regardless of nesting
+  depth.
+- Frames are packed without rotation or trimming: `"spriteSourceSize"` always
+  matches `"sourceSize"` at offset `(0, 0)`, and no `"rotated"`/`"trimmed"`
+  fields are written.
+- Each frame gets a normalized `"anchor"` (pivot point, 0–1), defaulting to
+  the center `(0.5, 0.5)`.
+
+| Flag | Description | Default |
+|---|---|---|
+| `-i PATH`, `--input PATH` | Folder of frame images to pack (required) | — |
+| `-o PATH`, `--output PATH` | Folder to write the packed `.png`/`.json` into | `packed` |
+| `--name NAME` | Output file basename, without extension | the input folder's name |
+| `-p N`, `--padding N` | Pixels of empty space between packed frames | `0` |
+| `--max-width N` | Target maximum atlas width in pixels; a single frame wider than this still gets its own row | `2048` |
+| `--anchor X Y` | Normalized pivot point (0–1) applied to every frame | `0.5 0.5` |
+
+```bash
+# Pack DivineKatanaObj's Idle/Init/Remove folders into DivineKatanaObj.png/.json
+python pack_spritesheet.py -i output/objects/DivineKatanaObj -o packed --anchor 0.5 0.41
+```
+
+Packing a folder and splitting the result reproduces the original frames
+pixel-for-pixel and the original folder structure exactly.
 
 ## Building a standalone executable
 

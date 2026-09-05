@@ -15,7 +15,7 @@ if not exist ".venv\Scripts\python.exe" (
 set "PY=.venv\Scripts\python.exe"
 
 "%PY%" -m pip install --upgrade pip
-"%PY%" -m pip install -r requirements.txt -r requirements-build.txt
+"%PY%" -m pip install -r requirements.txt -r requirements-build.txt -r requirements-gui.txt
 if errorlevel 1 goto :error
 
 "%PY%" -m PyInstaller --noconfirm TextureSplitter.spec

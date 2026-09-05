@@ -25,5 +25,5 @@ if not defined PYTHON_EXE (
     exit /b 1
 )
 
-"%PYTHON_EXE%" app.py
+"%PYTHON_EXE%" gui_app.py
 pause
