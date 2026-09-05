@@ -7,6 +7,7 @@ duplicating the cropping/packing logic itself.
 """
 
 import json
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Optional
@@ -20,7 +21,7 @@ from pack_spritesheet import (
     load_images,
     pack_frames,
 )
-from split_spritesheet import build_targets, crop_frame
+from split_spritesheet import build_targets, crop_frame, place_on_canvas
 from version import __version__
 
 PIVOT_PRESETS = {
@@ -47,6 +48,10 @@ class SpriteDocument:
     frames: dict = field(default_factory=dict)
     animations: Optional[dict] = None
     pivot_points_enabled: bool = False
+    # "spritesheet" (loaded from a JSON+PNG) or "folder" (loaded frame-by-frame).
+    # The GUI's export frame-size control only makes sense for the former.
+    source_kind: str = "folder"
+    frame_size: Optional[int] = None
 
 
 def load_from_spritesheet(json_path: Path) -> SpriteDocument:
@@ -86,7 +91,7 @@ def load_from_spritesheet(json_path: Path) -> SpriteDocument:
             if keys:
                 animations[anim_name] = keys
 
-    return SpriteDocument(name=json_path.stem, frames=frames, animations=animations)
+    return SpriteDocument(name=json_path.stem, frames=frames, animations=animations, source_kind="spritesheet")
 
 
 def load_from_folder(folder_path: Path) -> SpriteDocument:
@@ -110,16 +115,28 @@ def set_anchor(doc: SpriteDocument, keys: Iterable[str], anchor: tuple) -> None:
 
 
 def export_split(doc: SpriteDocument, out_dir: Path) -> int:
-    """Write every frame back out as an individual image file."""
+    """Write every frame back out as an individual image file, padding each
+    onto a transparent doc.frame_size x doc.frame_size canvas (centered, no
+    resizing) when set — mirrors split_spritesheet.py's -fs/--frame-size."""
     out_dir.mkdir(parents=True, exist_ok=True)
     icc_profile = load_default_icc_profile()
     save_kwargs = {"icc_profile": icc_profile} if icc_profile is not None else {}
 
     count = 0
     for key, frame in doc.frames.items():
+        image = frame.image
+        if doc.frame_size:
+            if image.width > doc.frame_size or image.height > doc.frame_size:
+                print(
+                    f"warning: '{key}' ({image.width}x{image.height}) exceeds frame size "
+                    f"{doc.frame_size}, leaving unpadded",
+                    file=sys.stderr,
+                )
+            else:
+                image = place_on_canvas(image, doc.frame_size)
         out_path = out_dir / key
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        frame.image.save(out_path, **save_kwargs)
+        image.save(out_path, **save_kwargs)
         count += 1
     return count
 

@@ -38,6 +38,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QSlider,
+    QSpinBox,
     QSplitter,
     QStackedWidget,
     QToolBar,
@@ -81,6 +82,9 @@ T = {
         "normalized_y": "Normalized y:",
         "predefined": "Predefined:",
         "select_sprite": "Select a sprite to edit its pivot point.",
+        "frame_size_title": "Frame Size",
+        "frame_size_original": "Original",
+        "frame_size_custom": "Custom...",
         "preset_center": "Center",
         "preset_top_left": "Top left",
         "preset_top_center": "Top center",
@@ -116,6 +120,9 @@ T = {
         "normalized_y": "Normalizado y:",
         "predefined": "Predefinido:",
         "select_sprite": "Selecione um sprite para editar seu ponto de pivô.",
+        "frame_size_title": "Tamanho do Frame",
+        "frame_size_original": "Original",
+        "frame_size_custom": "Personalizado...",
         "preset_center": "Centro",
         "preset_top_left": "Superior esquerdo",
         "preset_top_center": "Superior centro",
@@ -151,6 +158,9 @@ T = {
         "normalized_y": "Normalizado y:",
         "predefined": "Predefinido:",
         "select_sprite": "Selecciona un sprite para editar su punto de pivote.",
+        "frame_size_title": "Tamaño del Frame",
+        "frame_size_original": "Original",
+        "frame_size_custom": "Personalizado...",
         "preset_center": "Centro",
         "preset_top_left": "Superior izquierda",
         "preset_top_center": "Superior centro",
@@ -186,6 +196,9 @@ T = {
         "normalized_y": "归一化 y：",
         "predefined": "预设：",
         "select_sprite": "选择一个 Sprite 以编辑其锚点。",
+        "frame_size_title": "帧大小",
+        "frame_size_original": "原始大小",
+        "frame_size_custom": "自定义...",
         "preset_center": "居中",
         "preset_top_left": "左上",
         "preset_top_center": "上居中",
@@ -221,6 +234,9 @@ T = {
         "normalized_y": "Normalizované y:",
         "predefined": "Predvolené:",
         "select_sprite": "Vyberte sprite na úpravu jeho bodu otáčania.",
+        "frame_size_title": "Veľkosť frame",
+        "frame_size_original": "Pôvodná veľkosť",
+        "frame_size_custom": "Vlastné...",
         "preset_center": "Stred",
         "preset_top_left": "Vľavo hore",
         "preset_top_center": "Hore v strede",
@@ -516,17 +532,55 @@ class PivotPanel(QWidget):
         self.stack.addWidget(self.lbl_placeholder)
         self.stack.addWidget(fields_widget)
 
+        # Frame Size: export-time padding, only meaningful for a document
+        # loaded from a spritesheet (not a raw folder of frames) — visibility
+        # toggled per-document in set_document().
+        self.lbl_frame_size_title = QLabel()
+        self.frame_size_combo = QComboBox()
+        self.frame_size_combo.addItem("", 0)  # "Original", text set in set_language()
+        for size in (16, 32, 64, 128):
+            self.frame_size_combo.addItem(f"{size} x {size}", size)
+        self.frame_size_combo.addItem("", -1)  # "Custom...", text set in set_language()
+        self.frame_size_combo.currentIndexChanged.connect(self._on_frame_size_changed)
+        self.frame_size_custom = QSpinBox()
+        self.frame_size_custom.setRange(1, 8192)
+        self.frame_size_custom.setValue(64)
+        self.frame_size_custom.setVisible(False)
+        self.frame_size_custom.valueChanged.connect(self._on_frame_size_changed)
+
+        fs_layout = QVBoxLayout()
+        fs_layout.setContentsMargins(0, 0, 0, 0)
+        fs_layout.addWidget(self.lbl_frame_size_title)
+        fs_layout.addWidget(self.frame_size_combo)
+        fs_layout.addWidget(self.frame_size_custom)
+        self.frame_size_group = QWidget()
+        self.frame_size_group.setLayout(fs_layout)
+        self.frame_size_group.setVisible(False)
+
         self.lbl_settings_title = QLabel()
         self.lbl_pivot_point_title = QLabel()
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.lbl_settings_title)
+        layout.addWidget(self.frame_size_group)
         layout.addWidget(self.lbl_pivot_point_title)
         layout.addWidget(self.stack)
         layout.addStretch()
 
         self._set_fields_enabled(False)
         self.set_language(self.lang)
+
+    def set_document(self, doc: SpriteDocument):
+        """Called once per loaded document (not per selection change): resets
+        and shows/hides the Frame Size control based on where it came from."""
+        show_frame_size = doc is not None and doc.source_kind == "spritesheet"
+        if doc is not None:
+            doc.frame_size = None
+        with block_signals(self.frame_size_combo, self.frame_size_custom):
+            self.frame_size_combo.setCurrentIndex(0)
+            self.frame_size_custom.setVisible(False)
+            self.frame_size_custom.setValue(64)
+        self.frame_size_group.setVisible(show_frame_size)
 
     def set_language(self, lang: str):
         self.lang = lang
@@ -541,6 +595,9 @@ class PivotPanel(QWidget):
         self.lbl_placeholder.setText(t(lang, "select_sprite"))
         for i, tr_key in enumerate(_PRESET_TR_KEYS):
             self.preset_combo.setItemText(i, t(lang, tr_key))
+        self.lbl_frame_size_title.setText(t(lang, "frame_size_title"))
+        self.frame_size_combo.setItemText(0, t(lang, "frame_size_original"))
+        self.frame_size_combo.setItemText(self.frame_size_combo.count() - 1, t(lang, "frame_size_custom"))
 
     def set_selection(self, doc: SpriteDocument, keys):
         self._doc = doc
@@ -597,6 +654,19 @@ class PivotPanel(QWidget):
         if key in PIVOT_PRESETS:
             self._apply_anchor(PIVOT_PRESETS[key])
 
+    def _on_frame_size_changed(self, *_):
+        if self._doc is None:
+            return
+        data = self.frame_size_combo.currentData()
+        is_custom = data == -1
+        self.frame_size_custom.setVisible(is_custom)
+        if data == 0:
+            self._doc.frame_size = None
+        elif is_custom:
+            self._doc.frame_size = self.frame_size_custom.value()
+        else:
+            self._doc.frame_size = data
+
 
 class PreviewDialog(QDialog):
     def __init__(self, parent, frames, lang="en"):
@@ -606,6 +676,7 @@ class PreviewDialog(QDialog):
         self.frames = frames
         self.idx = 0
         self.playing = True
+        self.zoom = 1.0
 
         self.label = QLabel()
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -637,7 +708,15 @@ class PreviewDialog(QDialog):
             self.timer.start(int(1000 / self.speed.value()))
 
     def _show_frame(self):
-        self.label.setPixmap(pil_to_qpixmap(self.frames[self.idx].image))
+        pixmap = pil_to_qpixmap(self.frames[self.idx].image)
+        if self.zoom != 1.0:
+            pixmap = pixmap.scaled(
+                max(1, round(pixmap.width() * self.zoom)),
+                max(1, round(pixmap.height() * self.zoom)),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.FastTransformation,
+            )
+        self.label.setPixmap(pixmap)
 
     def _advance(self):
         self.idx = (self.idx + 1) % len(self.frames)
@@ -647,6 +726,14 @@ class PreviewDialog(QDialog):
         self.playing = not self.playing
         self.play_btn.setText(t(self.lang, "pause") if self.playing else t(self.lang, "play"))
         self._schedule()
+
+    def wheelEvent(self, event):
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            factor = 1.15 if event.angleDelta().y() > 0 else 1 / 1.15
+            self.zoom = max(0.25, min(16.0, self.zoom * factor))
+            self._show_frame()
+        else:
+            super().wheelEvent(event)
 
 
 class MainWindow(QMainWindow):
@@ -782,6 +869,7 @@ class MainWindow(QMainWindow):
     def _set_document(self, doc):
         self.doc = doc
         populate_explorer(self.tree, doc)
+        self.pivot_panel.set_document(doc)
         self.act_split.setEnabled(True)
         self.act_publish.setEnabled(True)
         self.act_preview.setEnabled(True)
